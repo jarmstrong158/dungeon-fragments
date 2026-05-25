@@ -87,7 +87,8 @@ starting Affinity and a unique starter item with a baked-in passive.
 
 - [x] **Enemy variety** — Charger / Ranger / Healer kinds with distinct AI.
 - [x] **Starting classes** — Brawler / Trickster / Sentinel diverge from turn 1.
-- [ ] **Build variety** — buff stationary archetypes further, audit Kinetic Reserve dominance.
+- [x] **Build variety pass 1** — Kinetic Reserve nerfed (exponential → linear), Bulwark grants DEF as well as damage, Charger weight raised for more anti-kite pressure.
+- [ ] Iterate: playtest, add more stationary counter-passives, audit dual/tri mastery balance.
 
 ## Tech notes
 

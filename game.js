@@ -412,7 +412,7 @@ const PASSIVEEFFECTS = [
     // DEF affinity
     { name: "Fortified", desc: "Bonus defense", stat: "fortify", range: [5, 20], affinity: "DEF" },
     { name: "Regeneration", desc: "Heal % of max HP per turn", stat: "regen", range: [4, 8], affinity: "DEF" },
-    { name: "Bulwark", desc: "20% increased damage per turn not moved (max 5 stacks, resets each floor)", stat: "bulwark", range: [1, 1], affinity: "DEF" },
+    { name: "Bulwark", desc: "Each turn standing still: +20% damage AND +5% DEF (max 5 stacks, resets on move)", stat: "bulwark", range: [1, 1], affinity: "DEF" },
     { name: "Last Stand", desc: "Gain 50-80% DEF when below 25% HP", stat: "lastStand", range: [50, 80], affinity: "DEF" },
     { name: "Guardian Shell", desc: "Taking damage grants stacking 2-5% damage reduction (max 5 stacks)", stat: "guardianShell", range: [2, 5], affinity: "DEF" },
     { name: "Iron Will", desc: "Increased ATK based on base DEF stat", stat: "ironWill", range: [5, 20], affinity: "DEF" },
@@ -529,7 +529,7 @@ const LEGENDARY_PASSIVES = [
     { name: "Soulrend", desc: "Attacks ignore % of enemy DEF", stat: "soulrend", range: [20, 50] },
     { name: "Undying", desc: "Survive lethal hit with 1 HP (cooldown)", stat: "undying", range: [1, 1] },
     { name: "Speedster", desc: "20% base speed + 50% bonus damage from speed", stat: "speedster", range: [20, 20] },
-    { name: "Kinetic Reserve", desc: "Moving without attacking doubles next hit (max 4 stacks)", stat: "kineticReserve", range: [1, 1] },
+    { name: "Kinetic Reserve", desc: "Moving without attacking grants +60% damage per stack (max 4 stacks)", stat: "kineticReserve", range: [1, 1] },
     { name: "Goldblood", desc: "Luck also boosts ATK and DEF", stat: "goldblood", range: [10, 30] },
     { name: "Siphon", desc: "Kills restore MP", stat: "siphon", range: [10, 30] },
     { name: "Psychic Flare", desc: "AOE range +1 tile, but costs 5 more MP", stat: "psychicFlare", range: [1, 1] },
@@ -582,7 +582,7 @@ const ENEMY_KINDS = {
         name: "Charger",
         color: "#a0522d",
         hpMult: 1.5, atkMult: 1.2, defMult: 0.7,
-        minFloor: 5, weight: 25,
+        minFloor: 5, weight: 35,  // Bumped from 25 — anti-kite pressure
         ai: function(enemy, p, h) {
             const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
             // If adjacent, melee like a grunt.
@@ -789,7 +789,7 @@ const CLASSES = {
             type: "chest",
             atk: 0, def: 4,
             passives: [
-                { name: "Bulwark", stat: "bulwark", value: 1, desc: "Stacking damage bonus per turn standing still" },
+                { name: "Bulwark", stat: "bulwark", value: 1, desc: "Stacking +20% damage and +5% DEF per turn standing still (max 5)" },
                 { name: "Fortified", stat: "fortify", value: 10, desc: "+10% DEF" }
             ]
         }
@@ -1374,12 +1374,12 @@ function updateBuffsPanel() {
         });
     }
 
-    // Kinetic Reserve stacks indicator
+    // Kinetic Reserve stacks indicator (additive multiplier — see attack())
     if (effects.kineticReserve && p.kineticStacks > 0) {
         const stackDiv = document.createElement('div');
-        const mult = Math.pow(2, p.kineticStacks);
+        const mult = 1 + 0.6 * p.kineticStacks;
         stackDiv.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,128,0,0.15); border-left: 3px solid #ff8000; font-family: 'VT323', monospace; color: #ff8000;";
-        stackDiv.innerHTML = `âš¡ Kinetic Reserve: ${p.kineticStacks}/4 stacks (x${mult} next hit)`;
+        stackDiv.innerHTML = `âš¡ Kinetic Reserve: ${p.kineticStacks}/4 stacks (x${mult.toFixed(1)} next hit)`;
         panel.appendChild(stackDiv);
     }
 
@@ -1387,7 +1387,7 @@ function updateBuffsPanel() {
     if (effects.bulwark && p.bulwarkStacks > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(78,205,196,0.1); border-left: 3px solid var(--accent-secondary); font-family: 'VT323', monospace; color: var(--accent-secondary);";
-        div.innerHTML = `ðŸ›¡ Bulwark: ${p.bulwarkStacks}/5 stacks (+${p.bulwarkStacks * 20}% damage)`;
+        div.innerHTML = `ðŸ›¡ Bulwark: ${p.bulwarkStacks}/5 stacks (+${p.bulwarkStacks * 20}% damage, +${p.bulwarkStacks * 5}% DEF)`;
         panel.appendChild(div);
     }
 
@@ -3245,11 +3245,13 @@ function attack() {
                 damage = Math.floor(damage * (1 + p.berserkersFuryStacks * 0.03));
             }
 
-            // Kinetic Reserve â€” multiplicative damage from movement stacks
+            // Kinetic Reserve — additive damage from movement stacks.
+            // Was 2^stacks (16x at 4 stacks — dominant strategy). Now +60% per stack
+            // (max 3.4x at 4 stacks). Still very strong, no longer the only build.
             if (p.passiveEffects.kineticReserve && p.kineticStacks > 0) {
-                const kineticMult = Math.pow(2, p.kineticStacks);
+                const kineticMult = 1 + 0.6 * p.kineticStacks;
                 damage = Math.floor(damage * kineticMult);
-                addLog(`Kinetic Reserve x${kineticMult}! (${p.kineticStacks} stacks)`, "log-damage");
+                addLog(`Kinetic Reserve x${kineticMult.toFixed(1)}! (${p.kineticStacks} stacks)`, "log-damage");
                 p.kineticStacks = 0;
                 updateBuffsPanel();
             }
@@ -4643,6 +4645,11 @@ function getEffectivePlayerDef() {
     }
     if (hasMastery("warlord") && p.passiveEffects.warlordDefBonus) {
         def += p.passiveEffects.warlordDefBonus;
+    }
+    // Bulwark — stationary stacks now grant DEF in addition to damage (build-variety pass).
+    // Damage portion is still applied in attack(); see line ~3211.
+    if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
+        def = Math.floor(def * (1 + p.bulwarkStacks * 0.05));
     }
     return def;
 }
