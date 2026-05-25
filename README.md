@@ -57,13 +57,26 @@ game.js      everything else: combat, loot, passives, rendering, save data
 - **Prestige** — Fragments earned on death buy 21 permanent upgrades across 4
   categories, plus 20 Echo milestones. Export/import via base64.
 
+## Enemy kinds
+
+Beyond the standard Grunt (chase + melee), regular enemies roll a kind that
+shapes the encounter:
+
+| Kind     | From floor | Behaviour                                                    |
+|----------|------------|--------------------------------------------------------------|
+| Grunt    | 1          | Chase the player, attack when adjacent.                      |
+| Charger  | 5          | Telegraph a direction, then **dash 3 tiles** the next turn. Anti-kite. |
+| Ranger   | 8          | Keeps distance 3–5; fires a projectile if aligned in line of sight. Forces movement. |
+| Healer   | 12         | Heals adjacent allies for ~8% maxHP/turn. Stays back. Priority target. |
+
+Bosses, Rare Bosses, and Elites keep grunt AI but stack on top via the
+existing modifier system (Phase Shift, Ironclad, Frenzied, Vampiric, Convergence).
+
 ## Roadmap
 
-Recent audit fixed bugs and code smells. Next up — design overhaul:
-
-- [ ] **Enemy variety** — 3–5 distinct enemy types with different AI (ranged, charger, summoner, swarm). Right now there is one enemy behaviour: chase. Highest-leverage change.
+- [x] **Enemy variety** — Charger / Ranger / Healer kinds with distinct AI.
 - [ ] **Starting classes** — 3–4 class kits that diverge from turn 1 (starting Affinity + starter passive + starter gear).
-- [ ] **Build variety** — buff stationary archetypes (Bulwark, Tenacity), add anti-kite enemies so SPD+CRIT+LUCK isn't the only viable build.
+- [ ] **Build variety** — buff stationary archetypes (Bulwark, Tenacity), now that anti-kite pressure exists.
 
 ## Tech notes
 

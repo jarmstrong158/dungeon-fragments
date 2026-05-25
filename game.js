@@ -555,6 +555,194 @@ const ENEMY_MODIFIERS = [
     { name: "Convergence", desc: "Enemies gain +15% ATK per turn you stand still (max 5)", stat: "convergence", color: "#ff6600" }
 ];
 
+// Enemy kinds — each defines stat overrides + AI behaviour.
+// AI behaviour signatures: ai(enemy, p, helpers) where helpers = { processEnemyAttack, signalHit, addLog }.
+// Default kind is "grunt" (legacy chase-and-melee behaviour). Bosses keep grunt AI.
+const ENEMY_KINDS = {
+    grunt: {
+        id: "grunt",
+        name: "Grunt",
+        color: "#e74c3c",
+        hpMult: 1, atkMult: 1, defMult: 1,
+        minFloor: 1, weight: 100,
+        ai: function(enemy, p, h) {
+            const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
+            if (dist <= 1) {
+                h.attack(enemy);
+            } else {
+                if (enemy.x < p.x) enemy.x++; else if (enemy.x > p.x) enemy.x--;
+                if (enemy.y < p.y) enemy.y++; else if (enemy.y > p.y) enemy.y--;
+            }
+        }
+    },
+    charger: {
+        // Heavy, slow telegraph then dash 3 tiles dealing damage in path.
+        // Punishes kiting — if you're 3-4 tiles away, the charge will catch you.
+        id: "charger",
+        name: "Charger",
+        color: "#a0522d",
+        hpMult: 1.5, atkMult: 1.2, defMult: 0.7,
+        minFloor: 5, weight: 25,
+        ai: function(enemy, p, h) {
+            const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
+            // If adjacent, melee like a grunt.
+            if (dist <= 1) {
+                h.attack(enemy);
+                enemy.chargeWindup = 0; enemy.chargeDx = 0; enemy.chargeDy = 0;
+                return;
+            }
+            // Charge release: dash up to 3 tiles in telegraphed direction.
+            if (enemy.chargeWindup > 0) {
+                enemy.chargeWindup = 0;
+                const dx = enemy.chargeDx, dy = enemy.chargeDy;
+                let steps = 0;
+                for (let i = 0; i < 3; i++) {
+                    const nx = enemy.x + dx;
+                    const ny = enemy.y + dy;
+                    if (nx < 0 || nx >= GRIDSIZE || ny < 0 || ny >= GRIDSIZE) break;
+                    enemy.x = nx; enemy.y = ny;
+                    steps++;
+                    // Player in the path?
+                    if (enemy.x === p.x && enemy.y === p.y) {
+                        // Bumped into player — stop, deal a heavy attack.
+                        h.attack(enemy);
+                        // Knock back one tile so they're adjacent, not overlapping.
+                        enemy.x -= dx; enemy.y -= dy;
+                        break;
+                    }
+                }
+                if (steps > 0) addLog("Charger dashes!", "log-damage");
+                return;
+            }
+            // Telegraph: pick the dominant axis toward player.
+            const adx = p.x - enemy.x, ady = p.y - enemy.y;
+            if (Math.abs(adx) >= Math.abs(ady)) {
+                enemy.chargeDx = adx > 0 ? 1 : -1; enemy.chargeDy = 0;
+            } else {
+                enemy.chargeDx = 0; enemy.chargeDy = ady > 0 ? 1 : -1;
+            }
+            enemy.chargeWindup = 1;
+        }
+    },
+    ranger: {
+        // Keeps distance; fires orthogonal projectile if in line of sight.
+        // Anti-grouping — forces movement.
+        id: "ranger",
+        name: "Ranger",
+        color: "#ff9933",
+        hpMult: 0.7, atkMult: 0.9, defMult: 0.8,
+        minFloor: 8, weight: 20,
+        ai: function(enemy, p, h) {
+            const dx = p.x - enemy.x, dy = p.y - enemy.y;
+            const dist = Math.abs(dx) + Math.abs(dy);
+            // Fire if orthogonal-aligned within 6 tiles.
+            const aligned = (dx === 0 || dy === 0);
+            if (aligned && dist > 0 && dist <= 6) {
+                enemy.arrowFlash = 2; // 2 frames of arrow visual
+                enemy.arrowDx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+                enemy.arrowDy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+                enemy.arrowDist = dist;
+                addLog("Ranger fires an arrow!", "log-damage");
+                h.attack(enemy);
+                return;
+            }
+            // Reposition: keep distance 3–5.
+            if (dist < 3) {
+                // Step away on the more-extreme axis.
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    enemy.x -= dx > 0 ? 1 : -1;
+                } else if (dy !== 0) {
+                    enemy.y -= dy > 0 ? 1 : -1;
+                }
+            } else if (dist > 5) {
+                // Step toward player on the more-extreme axis.
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    enemy.x += dx > 0 ? 1 : -1;
+                } else if (dy !== 0) {
+                    enemy.y += dy > 0 ? 1 : -1;
+                }
+            } else {
+                // In range but not aligned — sidestep to align.
+                if (Math.abs(dx) < Math.abs(dy)) {
+                    enemy.x += dx > 0 ? 1 : (dx < 0 ? -1 : 0);
+                } else {
+                    enemy.y += dy > 0 ? 1 : (dy < 0 ? -1 : 0);
+                }
+            }
+            // Clamp to grid.
+            enemy.x = Math.max(0, Math.min(GRIDSIZE - 1, enemy.x));
+            enemy.y = Math.max(0, Math.min(GRIDSIZE - 1, enemy.y));
+        }
+    },
+    healer: {
+        // Heals adjacent allies. Stays near other enemies. Priority target.
+        id: "healer",
+        name: "Healer",
+        color: "#27ae60",
+        hpMult: 0.6, atkMult: 0.5, defMult: 1.0,
+        minFloor: 12, weight: 10,
+        ai: function(enemy, p, h) {
+            // Heal adjacent enemies (excluding self).
+            let healed = 0;
+            const healPct = 0.08;
+            gameState.enemies.forEach(other => {
+                if (other === enemy || other.hp <= 0) return;
+                const d = Math.abs(other.x - enemy.x) + Math.abs(other.y - enemy.y);
+                if (d <= 2 && other.hp < other.maxHp) {
+                    const heal = Math.max(1, Math.floor(other.maxHp * healPct));
+                    other.hp = Math.min(other.maxHp, other.hp + heal);
+                    healed++;
+                }
+            });
+            if (healed > 0) {
+                enemy.healFlash = 2;
+                addLog(`Healer mends ${healed} ally${healed > 1 ? "ies" : ""}!`, "log-loot");
+            }
+            // Movement: keep distance from player; cluster with allies.
+            const dxp = p.x - enemy.x, dyp = p.y - enemy.y;
+            const distp = Math.abs(dxp) + Math.abs(dyp);
+            if (distp <= 2) {
+                // Too close to player — back off.
+                if (Math.abs(dxp) > Math.abs(dyp)) {
+                    enemy.x -= dxp > 0 ? 1 : -1;
+                } else if (dyp !== 0) {
+                    enemy.y -= dyp > 0 ? 1 : -1;
+                }
+            } else {
+                // Find nearest ally and drift toward them.
+                let nearest = null, nd = Infinity;
+                gameState.enemies.forEach(other => {
+                    if (other === enemy || other.hp <= 0) return;
+                    const d = Math.abs(other.x - enemy.x) + Math.abs(other.y - enemy.y);
+                    if (d < nd) { nd = d; nearest = other; }
+                });
+                if (nearest && nd > 2) {
+                    const adx = nearest.x - enemy.x, ady = nearest.y - enemy.y;
+                    if (Math.abs(adx) > Math.abs(ady)) {
+                        enemy.x += adx > 0 ? 1 : -1;
+                    } else if (ady !== 0) {
+                        enemy.y += ady > 0 ? 1 : -1;
+                    }
+                }
+            }
+            enemy.x = Math.max(0, Math.min(GRIDSIZE - 1, enemy.x));
+            enemy.y = Math.max(0, Math.min(GRIDSIZE - 1, enemy.y));
+        }
+    }
+};
+
+// Pick a kind id for a non-boss regular enemy, weighted by availability and weight.
+function pickEnemyKind(floor) {
+    const available = Object.values(ENEMY_KINDS).filter(k => floor >= k.minFloor);
+    const totalWeight = available.reduce((s, k) => s + k.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const k of available) {
+        roll -= k.weight;
+        if (roll <= 0) return k.id;
+    }
+    return "grunt";
+}
+
 // Player debuffs â€” permanent per floor threshold, stacking
 const PLAYER_DEBUFFS = [
     { floor: 35, name: "Corrosion", desc: "DEF reduced by 15%", stat: "corrosion", color: "#aa8844" },
@@ -1994,7 +2182,7 @@ function addLog(message, className) {
 }
 
 // Enemies
-function createEnemy(isBoss = false, isRareBoss = false) {
+function createEnemy(isBoss = false, isRareBoss = false, kindId = null) {
     const f = gameState.floor;
     // Scaling: linear + polynomial + cubic kicker (see CONFIG.difficulty)
     const D = CONFIG.difficulty;
@@ -2003,13 +2191,18 @@ function createEnemy(isBoss = false, isRareBoss = false) {
         + (f > D.cubicThreshold ? Math.pow((f - D.cubicThreshold) / D.cubicDivisor, D.cubicExponent) : 0);
 
     const E = CONFIG.enemies;
-    const hpMult = isRareBoss ? E.rareBossHpMult : isBoss ? E.bossHpMult : 1;
-    const atkMult = isRareBoss ? E.rareBossAtkMult : isBoss ? E.bossAtkMult : E.normalAtkMult;
+    // Bosses always use grunt AI; regular enemies roll a kind.
+    const kind = ENEMY_KINDS[isBoss || isRareBoss ? "grunt" : (kindId || "grunt")] || ENEMY_KINDS.grunt;
+
+    const baseHpMult = isRareBoss ? E.rareBossHpMult : isBoss ? E.bossHpMult : 1;
+    const baseAtkMult = isRareBoss ? E.rareBossAtkMult : isBoss ? E.bossAtkMult : E.normalAtkMult;
+    const hpMult = baseHpMult * kind.hpMult;
+    const atkMult = baseAtkMult * kind.atkMult;
 
     const floorDefScale = Math.min(gameState.floor / 10, 1);
     const bossDefBase = isRareBoss ? 1.5 : isBoss ? 1.2 : 1;
     const bossDefMax = isRareBoss ? 4 : isBoss ? 2.5 : 1;
-    const defMult = bossDefBase + (bossDefMax - bossDefBase) * floorDefScale;
+    const defMult = (bossDefBase + (bossDefMax - bossDefBase) * floorDefScale) * kind.defMult;
 
     // Ensure enemies don't spawn adjacent to player (safe radius of 3 tiles)
     const px = gameState.player.x;
@@ -2030,7 +2223,9 @@ function createEnemy(isBoss = false, isRareBoss = false) {
         xp: isRareBoss ? gameState.player.xpToNext : Math.floor(10 + Math.random() * 10 * floorMultiplier * hpMult),
         isBoss,
         isRareBoss,
-        color: isRareBoss ? "#ffd93d" : isBoss ? "#ff6b9d" : "#e74c3c"
+        kind: kind.id,
+        // Boss colors override kind color
+        color: isRareBoss ? "#ffd93d" : isBoss ? "#ff6b9d" : kind.color
     };
 }
 
@@ -2104,7 +2299,8 @@ function generateFloor() {
         Math.max(0, f_ec - E.countRampThreshold) * E.countPerFloorLate
     );
     for (let i = 0; i < enemyCount; i++) {
-        gameState.enemies.push(createEnemy(false, false));
+        const kindId = pickEnemyKind(gameState.floor);
+        gameState.enemies.push(createEnemy(false, false, kindId));
     }
 
     // Bosses â€” logarithmic scaling, caps so bosses stay meaningful
@@ -2482,6 +2678,59 @@ function drawGame() {
             ctx.fillRect(enemy.x * TILESIZE + 11, enemy.y * TILESIZE - 8, 10, 6);
             ctx.fillStyle = "#ccaaff";
             ctx.fillRect(enemy.x * TILESIZE + 13, enemy.y * TILESIZE - 6, 6, 3);
+        }
+
+        // Kind-specific markers (only for non-boss regular enemies)
+        if (!enemy.isBoss && !enemy.isRareBoss && !enemy.isElite) {
+            const ex = enemy.x * TILESIZE;
+            const ey = enemy.y * TILESIZE;
+            if (enemy.kind === "charger") {
+                // Two horn-spikes above head
+                ctx.fillStyle = "#5a2a0e";
+                ctx.fillRect(ex + 8, ey, 3, 5);
+                ctx.fillRect(ex + 21, ey, 3, 5);
+                // Telegraph: red directional arrow during windup
+                if (enemy.chargeWindup > 0) {
+                    ctx.fillStyle = "#ff3030";
+                    const dx = enemy.chargeDx || 0, dy = enemy.chargeDy || 0;
+                    for (let i = 1; i <= 3; i++) {
+                        const tx = (enemy.x + dx * i) * TILESIZE;
+                        const ty = (enemy.y + dy * i) * TILESIZE;
+                        if (tx < 0 || tx >= GRIDSIZE * TILESIZE || ty < 0 || ty >= GRIDSIZE * TILESIZE) break;
+                        ctx.globalAlpha = 0.4;
+                        ctx.fillRect(tx + 12, ty + 12, 8, 8);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            } else if (enemy.kind === "ranger") {
+                // Bow arch above head
+                ctx.fillStyle = "#cc6600";
+                ctx.fillRect(ex + 10, ey + 1, 12, 2);
+                ctx.fillRect(ex + 10, ey + 3, 2, 3);
+                ctx.fillRect(ex + 20, ey + 3, 2, 3);
+                // Arrow trail when firing
+                if (enemy.arrowFlash > 0) {
+                    ctx.fillStyle = "#ffe680";
+                    const dx = enemy.arrowDx || 0, dy = enemy.arrowDy || 0;
+                    for (let i = 1; i <= (enemy.arrowDist || 1); i++) {
+                        const tx = (enemy.x + dx * i) * TILESIZE;
+                        const ty = (enemy.y + dy * i) * TILESIZE;
+                        if (tx < 0 || ty < 0 || tx >= GRIDSIZE * TILESIZE || ty >= GRIDSIZE * TILESIZE) break;
+                        ctx.fillRect(tx + 14, ty + 14, 4, 4);
+                    }
+                }
+            } else if (enemy.kind === "healer") {
+                // Green plus sign above
+                ctx.fillStyle = "#7fffaa";
+                ctx.fillRect(ex + 14, ey - 1, 4, 8);
+                ctx.fillRect(ex + 12, ey + 1, 8, 4);
+                if (enemy.healFlash > 0) {
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillStyle = "#27ae60";
+                    ctx.fillRect(ex, ey, TILESIZE, TILESIZE);
+                    ctx.globalAlpha = 1;
+                }
+            }
         }
     });
 
@@ -4157,27 +4406,37 @@ function enemyTurn() {
         return incoming;
     }
 
+    // Decrement transient visual timers each turn (arrowFlash, healFlash).
     gameState.enemies.forEach(enemy => {
-        const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
-        if (dist <= 1) {
-            // Bastion stun â€” skip stunned enemies
+        if (enemy.arrowFlash > 0) enemy.arrowFlash--;
+        if (enemy.healFlash > 0) enemy.healFlash--;
+    });
+
+    // Helper bag passed to each kind's AI.
+    const aiHelpers = {
+        attack: function(enemy) {
             if (enemy.bastionStunned && enemy.bastionStunned > 0) {
                 enemy.bastionStunned--;
                 addLog("Enemy is stunned!", "log-level");
-            } else {
-                processEnemyAttack(enemy);
-                // Frenzied â€” enemies attack twice
-                if (hasEnemyModifier(enemy, "frenzied") && p.hp > 0) {
-                    processEnemyAttack(enemy);
-                }
+                return;
             }
-        } else {
-            // Simple chase
-            if (enemy.x < p.x) enemy.x++;
-            else if (enemy.x > p.x) enemy.x--;
-            if (enemy.y < p.y) enemy.y++;
-            else if (enemy.y > p.y) enemy.y--;
+            processEnemyAttack(enemy);
+            // Frenzied — enemies attack twice
+            if (hasEnemyModifier(enemy, "frenzied") && p.hp > 0) {
+                processEnemyAttack(enemy);
+            }
         }
+    };
+
+    gameState.enemies.forEach(enemy => {
+        // Bastion-stunned enemies skip their entire turn (no movement either).
+        if (enemy.bastionStunned && enemy.bastionStunned > 0) {
+            enemy.bastionStunned--;
+            addLog("Enemy is stunned!", "log-level");
+            return;
+        }
+        const kind = ENEMY_KINDS[enemy.kind] || ENEMY_KINDS.grunt;
+        kind.ai(enemy, p, aiHelpers);
     });
 
     if (playerWasHit) {
