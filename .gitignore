@@ -1,0 +1,13 @@
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local backups (keep out of the repo)
+*.backup-*.html
+*.backup
+
+# Logs / scratch
+*.log
+_scratch/

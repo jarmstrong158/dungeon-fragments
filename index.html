@@ -1,0 +1,504 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Fragments - 16-bit Roguelite RPG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="title-screen">
+            <h1>DUNGEON FRAGMENTS</h1>
+            <div class="subtitle">~ A Roguelite Adventure ~</div>
+            <div id="title-fragments" style="font-family: 'VT323', monospace; color: var(--accent-gold); font-size: 0.9em; margin-bottom: 15px; min-height: 1.2em;"></div>
+            <button onclick="startGame()">START GAME</button>
+            <button onclick="showPrestigeShop()">PRESTIGE SHOP</button>
+            <button onclick="showInstructions()">INSTRUCTIONS</button>
+        </div>
+        
+        <div id="instructions-screen" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; z-index: 500; background: linear-gradient(135deg, #0a0e27 0%, #1a1042 100%);">
+            <div style="text-align: center; animation: fadeIn 0.8s ease-in; padding: 40px 20px;">
+                <h1 style="font-size: 2em; color: var(--accent-primary); margin-bottom: 40px;">HOW TO PLAY</h1>
+                <div class="stats-summary" style="max-width: 800px; text-align: left;">
+                    <div style="font-size: 1.1em; line-height: 2; font-family: 'VT323', monospace;">
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin-bottom: 20px; text-decoration: underline; text-underline-offset: 6px;">CONTROLS</h3>
+                        <p><strong style="color: var(--accent-secondary)">WASD / Arrow Keys</strong> - Move your character</p>
+                        <p><strong style="color: var(--accent-secondary)">SPACE</strong> - Basic attack (FREE - no MP cost!)</p>
+                        <p><strong style="color: var(--accent-secondary)">R</strong> - Special AOE attack (costs 10 MP, hits 3x3 area)</p>
+                        <p><strong style="color: var(--accent-secondary)">E</strong> - Use Health Potion (restores 50 HP & 25 MP)</p>
+                        <p><strong style="color: var(--accent-secondary)">Click Items</strong> - Equip/unequip gear from inventory</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">OBJECTIVE</h3>
+                        <p>â€¢ Explore the dungeon and defeat enemies to gain XP and loot</p>
+                        <p>â€¢ Reach the golden stairs to descend to the next floor</p>
+                        <p>â€¢ Each floor gets harder but drops better loot</p>
+                        <p>â€¢ Survive as long as possible!</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">EQUIPMENT SYSTEM</h3>
+                        <p><strong>8 Equipment Slots:</strong> Weapon, Helmet, Chest, Legs, Gloves, Boots, Cape, Relic</p>
+                        <p>â€¢ Each piece provides ATK and/or DEF bonuses</p>
+                        <p>â€¢ Higher rarity = better stats and more passive effects</p>
+                        <p>â€¢ Right-click items to discard them</p>
+                        <p>â€¢ Discard 10 of same rarity to craft next tier up!</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">RARITY SYSTEM</h3>
+                        <p><span style="color: #aaa">â–  Common</span> - Basic items</p>
+                        <p><span style="color: #1eff00">â–  Uncommon</span> - Slightly better stats</p>
+                        <p><span style="color: #0070dd">â–  Rare</span> - Good stats + 1 passive effect</p>
+                        <p><span style="color: #a335ee">â–  Epic</span> - Great stats + 2 passive effects</p>
+                        <p><span style="color: #ff8000">â–  Legendary</span> - Amazing stats + 3 passive effects!</p>
+                        <p><span style="color: #ff4444; text-shadow: 0 0 8px #ff4444">â–  Mythic</span> - Godlike stats + 4 passive effects!!</p>
+                        <p><span style="color: #00ffcc; text-shadow: 0 0 10px #00ffcc">â–  Ascended</span> - Requires 80+ Luck to drop! 5 passives!!!</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">PASSIVE EFFECTS & AFFINITIES</h3>
+                        <p>Rare+ items have passive buffs organized into 5 <strong>Affinities</strong>. Every other level, you choose an Affinity to invest in â€” higher Affinity = more likely gear drops with those buffs!</p>
+                        <p>Affinities also grant <strong>milestone bonuses</strong> at levels 5 and 10:</p>
+                        <p style="color: #ff6b6b;"><strong>ATK:</strong> Lv 5: +5% base damage | Lv 10: +10% base damage</p>
+                        <p style="color: #4ecdc4;"><strong>DEF:</strong> Lv 5: +5% base DEF | Lv 10: +10% base DEF</p>
+                        <p style="color: #ffd93d;"><strong>SPD:</strong> Lv 5: +1 move speed | Lv 10: +1 move speed</p>
+                        <p style="color: #ff8800;"><strong>CRIT:</strong> Lv 5: +10% crit damage | Lv 10: +20% crit damage</p>
+                        <p style="color: #2ecc71;"><strong>LUCK:</strong> Lv 5: +5% rarity bonus | Lv 10: +10% rarity bonus</p>
+                        <p>Plus <strong>Vampiric</strong> and <strong>Arcane</strong> (utility, no affinity)</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">LEGENDARY+ EXCLUSIVE PASSIVES</h3>
+                        <p>These powerful effects only appear on Legendary, Mythic, and Ascended gear:</p>
+                        <p>â€¢ <strong>Soulrend</strong> - Attacks ignore % of enemy DEF</p>
+                        <p>â€¢ <strong>Undying</strong> - Survive a lethal hit with 1 HP (once per floor)</p>
+                        <p>â€¢ <strong>Speedster</strong> - 20% base speed + 50% bonus damage from speed</p>
+                        <p>â€¢ <strong>Kinetic Reserve</strong> - Moving doubles next attack (max 4 stacks, multiplicative)</p>
+                        <p>â€¢ <strong>Goldblood</strong> - Luck also boosts your ATK and DEF</p>
+                        <p>â€¢ <strong>Siphon</strong> - Kills restore MP</p>
+                        <p>â€¢ <strong>Psychic Flare</strong> - AOE range +1 tile, costs 5 more MP</p>
+                        <p>â€¢ <strong>Doom Aura</strong> - Nearby enemies take scaling damage each turn</p>
+
+                        <h3 style="color: #00ffcc; font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">ASCENDED MEDALLIONS</h3>
+                        <p>Discard 10 Ascended items to forge a permanent Medallion with one of these powers:</p>
+                        <p>â€¢ <strong style="color: #00ffcc">Double Up</strong> - Equip additional Weapon, Cape, and Relic</p>
+                        <p>â€¢ <strong style="color: #00ffcc">Lacerating Blows</strong> - All hits crit + bleed (1/5 maxHP for 3 turns)</p>
+                        <p>â€¢ <strong style="color: #00ffcc">Time Dilation</strong> - Speed always 1.5x faster than enemies</p>
+                        <p>â€¢ <strong style="color: #00ffcc">8-Leaf Clover</strong> - Items always spawn with max values</p>
+                        <p>â€¢ <strong style="color: #00ffcc">Soul Forge</strong> - Discarding items grants +1 to a random base stat</p>
+                        <p>â€¢ <strong style="color: #00ffcc">Chrono Strike</strong> - Every 4th attack hits twice (2nd hit at 50% damage)</p>
+
+                        <h3 style="color: #ff8800; font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">MASTERY PASSIVES</h3>
+                        <p>When you reach <strong>Affinity level 8</strong> in two or three stats, powerful Mastery passives unlock in the loot pool. These only appear on <strong>Legendary, Mythic, or Ascended</strong> gear.</p>
+                        <p style="color: #aaa; margin-bottom: 10px;">Dual Mastery â€” requires level 8 in two Affinities:</p>
+                        <p>â€¢ <strong style="color: #ff8800">War Machine</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>) â€” Damage adds 25% of total DEF. Attacks bypass Phase Shift</p>
+                        <p>â€¢ <strong style="color: #ff8800">Berserker's Fury</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>) â€” Kills grant +3% ATK (max +30%). Kills grant 1 free move</p>
+                        <p>â€¢ <strong style="color: #ff8800">Lethal Precision</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#ff8800">CRIT</span>) â€” Crits deal 3x base. Non-crits deal +15% bonus</p>
+                        <p>â€¢ <strong style="color: #ff8800">Blood Tithe</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#2ecc71">LUCK</span>) â€” 25% potion on kill. Overkill heals 10% of overkill</p>
+                        <p>â€¢ <strong style="color: #ff8800">Living Fortress</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>) â€” Hits dealing &lt;10% max HP deal 0. Taking 0 grants +2 SPD</p>
+                        <p>â€¢ <strong style="color: #ff8800">Iron Retaliation</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>) â€” Counterattack for 100% DEF when hit. Can crit</p>
+                        <p>â€¢ <strong style="color: #ff8800">Providence</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#2ecc71">LUCK</span>) â€” 20% chance to halve incoming damage. Gear gets +1 passive slot</p>
+                        <p>â€¢ <strong style="color: #ff8800">Flash Point</strong> (<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>) â€” 1st attack each floor is guaranteed crit. Every 3rd attack crits</p>
+                        <p>â€¢ <strong style="color: #ff8800">Treasure Sense</strong> (<span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>) â€” Hidden treasure tiles per floor. SPD increases detection range. Drop Rare+ gear</p>
+                        <p>â€¢ <strong style="color: #ff8800">Fortune's Edge</strong> (<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>) â€” 30% chance crit kills upgrade dropped gear's rarity</p>
+                        <p style="color: #aaa; margin: 10px 0;">Tri Mastery â€” requires level 8 in three Affinities:</p>
+                        <p>â€¢ <strong style="color: #ff8800">Warlord</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>) â€” ATK/DEF gain +15% of each other's average. +1 SPD per 50 ATK+DEF</p>
+                        <p>â€¢ <strong style="color: #ff8800">Deathbringer</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>) â€” 2x damage to enemies below 50% HP. Killing tough enemies heals 25%</p>
+                        <p>â€¢ <strong style="color: #ff8800">Pirate King</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#2ecc71">LUCK</span>) â€” All drops guaranteed Rare+. Bosses always drop 2 items</p>
+                        <p>â€¢ <strong style="color: #ff8800">Storm Dancer</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>) â€” Move 3+ tiles, next attack is AOE crit in 2-tile radius. 5-turn CD</p>
+                        <p>â€¢ <strong style="color: #ff8800">Gambler's Ruin</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>) â€” 10% for 3x damage, 5% for 0. Free moves spawn gold tiles (+2 ATK)</p>
+                        <p>â€¢ <strong style="color: #ff8800">Bastion</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>) â€” Moving through enemies deals 50% DEF. Can crit + stun 1 turn</p>
+                        <p>â€¢ <strong style="color: #ff8800">Lucky Star</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>) â€” 30% potion on dodge. Survive lethal via teleport (1/floor)</p>
+                        <p>â€¢ <strong style="color: #ff8800">Assassin's Creed</strong> (<span style="color:#ff6b6b">ATK</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>) â€” Crits ignore 100% DEF. Doubled crit chance vs full HP enemies</p>
+                        <p>â€¢ <strong style="color: #ff8800">Mirage</strong> (<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>) â€” 15% attacks phase through. After phasing, next crit deals +50%</p>
+                        <p>â€¢ <strong style="color: #ff8800">Chaos Engine</strong> (<span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>) â€” Random stat +10% each turn. Blocking counterattacks + stuns</p>
+
+                        <h3 style="color: #ff4444; font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">ENDGAME SCALING (Floor 35+)</h3>
+                        <p>As you descend deeper, the dungeon fights back:</p>
+                        <p>â€¢ <strong>Floor Modifiers</strong> â€” Every 5 floors past 35, enemies gain random modifiers (Ironclad, Frenzied, Vampiric Horde, Phase Shift, Convergence)</p>
+                        <p>â€¢ <strong>Player Debuffs</strong> â€” Permanent debuffs stack at thresholds: Corrosion (F35), Fatigue (F40), Entropy (F45), Cursed Blood (F50), Withering (F55), Void Siphon (F60), Death's Countdown (F65)</p>
+                        <p>â€¢ <span style="color: #ff00ff">ELITE enemies</span> appear past floor 15 with personal modifiers and better loot</p>
+                        <p>â€¢ <span style="color: #9966ff">ARCANE WARD enemies</span> appear past floor 25 â€” resist 75% of AOE damage, must be killed with melee!</p>
+                        <p>â€¢ <strong>Mana Burn</strong> â€” Casting AOE without moving costs +3 MP each consecutive cast. Move to reset!</p>
+                        <p>â€¢ <span style="color: #cc44ff">SACRIFICE ALTARS</span> appear past floor 60 â€” sacrifice equipped gear for permanent stat gains</p>
+
+                        <h3 style="color: var(--accent-gold); font-family: 'Press Start 2P'; font-size: 1.2em; margin: 30px 0 20px 0; text-decoration: underline; text-underline-offset: 6px;">TIPS</h3>
+                        <p>â€¢ <span style="color: var(--accent-primary)">Pink enemies are BOSSES</span> - they drop better loot!</p>
+                        <p>â€¢ <span style="color: #ffd93d">GOLD enemies are RARE BOSSES</span> - appear past floor 5, extremely dangerous!</p>
+                        <p>â€¢ <span style="color: #ff00ff">MAGENTA enemies are ELITES</span> - appear past floor 15, have personal modifiers!</p>
+                        <p>â€¢ <span style="color: #9966ff">PURPLE enemies are ARCANE WARDS</span> - appear past floor 25, resist AOE, melee only!</p>
+                        <p>â€¢ Floors beyond 8 spawn additional bosses - be prepared!</p>
+                        <p>â€¢ Enemies drop Health Potions - stock up before going deeper</p>
+                        <p>â€¢ Equip gear for all 8 slots to maximize your power</p>
+                        <p>â€¢ Farm bosses for legendary items with multiple passives</p>
+                        <p>â€¢ Use special attacks wisely - MP is valuable!</p>
+                        <p>â€¢ Hover over items to compare with equipped gear</p>
+                        <p>â€¢ When you level up, choose stat points. Every other level, also choose an Affinity!</p>
+                        <p>â€¢ Luck improves loot drop quality - invest wisely!</p>
+                        <p>â€¢ <span style="color: #ff2222">RED PORTALS</span> warp 10 floors ahead: +2 ATK, DEF, SPD, CRIT, HP, MP, Luck + 1 Affinity point</p>
+                        <p>â€¢ <span style="color: #2266ff">BLUE PORTALS</span> warp 30 floors ahead: +3 ATK, DEF, SPD, CRIT, HP, MP, +7 Luck + 2 Affinity points</p>
+                        <p>â€¢ Portals are the <strong>only way to increase your Luck stat</strong> during a run â€” plan accordingly!</p>
+                        <p>â€¢ Legendary+ gear can roll exclusive powerful passives!</p>
+                        <p>â€¢ Reach 80+ Luck to unlock <span style="color: #00ffcc">Ascended</span> item drops!</p>
+                        <p>â€¢ Discard 10 <span style="color: #00ffcc">Ascended</span> items to forge an Ascended Medallion!</p>
+                        <p>â€¢ Past floor 65, <span style="color: #ff0000">Death's Countdown</span> gives you 40 turns per floor!</p>
+                    </div>
+                </div>
+                <button onclick="backToTitleFromInstructions()" style="margin-top: 30px; margin-bottom: 40px;">BACK TO MENU</button>
+            </div>
+        </div>
+        
+        <div id="game-over-screen">
+            <h1>GAME OVER</h1>
+            <div class="stats-summary">
+                <h2 style="font-size: 1em; color: var(--accent-primary); margin-bottom: 30px;">FINAL STATS</h2>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Floor Reached:</span>
+                    <span class="stat-summary-value" id="final-floor">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Final Level:</span>
+                    <span class="stat-summary-value" id="final-level">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Enemies Defeated:</span>
+                    <span class="stat-summary-value" id="final-kills">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Bosses Defeated:</span>
+                    <span class="stat-summary-value" id="final-bosses">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Items Collected:</span>
+                    <span class="stat-summary-value" id="final-items">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Rare Bosses:</span>
+                    <span class="stat-summary-value" id="final-rare-bosses">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Legendary Items:</span>
+                    <span class="stat-summary-value" id="final-legendary">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label" style="color: #ff4444">Mythic Items:</span>
+                    <span class="stat-summary-value" id="final-mythic">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label" style="color: #00ffcc">Ascended Items:</span>
+                    <span class="stat-summary-value" id="final-ascended">0</span>
+                </div>
+                <div id="best-item-container"></div>
+            </div>
+            <div class="stats-summary" style="margin-top: 20px; border-top: 2px solid var(--accent-gold); padding-top: 20px;">
+                <h2 style="font-size: 0.9em; color: var(--accent-gold); margin-bottom: 15px;">FRAGMENTS EARNED</h2>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label" style="color: var(--accent-gold);">This Run:</span>
+                    <span class="stat-summary-value" style="color: var(--accent-gold);" id="fragments-earned">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Total Fragments:</span>
+                    <span class="stat-summary-value" id="total-fragments">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Total Runs:</span>
+                    <span class="stat-summary-value" id="total-runs">0</span>
+                </div>
+                <div class="stat-summary-row">
+                    <span class="stat-summary-label">Best Floor:</span>
+                    <span class="stat-summary-value" id="best-floor-ever">0</span>
+                </div>
+                <div id="new-echoes-container" style="margin-top: 10px;"></div>
+            </div>
+            <button onclick="retryGame()">CONTINUE</button>
+            <button onclick="showPrestigeShop()">PRESTIGE SHOP</button>
+        </div>
+
+        <div id="prestige-shop-screen" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-dark); z-index: 500; overflow-y: auto; padding: 30px;">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h1 style="font-family: 'Press Start 2P', cursive; text-align: center; color: var(--accent-gold); font-size: 1.2em; margin-bottom: 5px;">PRESTIGE SHOP</h1>
+                <div style="text-align: center; font-family: 'VT323', monospace; margin-bottom: 20px;">
+                    <span style="color: var(--accent-gold); font-size: 1.4em;" id="shop-fragments">0</span>
+                    <span style="color: #888; font-size: 1em;"> Fragments</span>
+                    <span style="color: #555; font-size: 0.8em; margin-left: 15px;">Total Earned: <span id="shop-total-earned">0</span> | Runs: <span id="shop-total-runs">0</span></span>
+                </div>
+                <div id="prestige-tabs" style="text-align: center; margin-bottom: 15px;"></div>
+                <div id="prestige-upgrades" style="margin-bottom: 25px;"></div>
+                <div id="prestige-echoes" style="margin-bottom: 25px; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid #333;"></div>
+                <div id="prestige-best-run" style="margin-bottom: 25px; padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid #333;"></div>
+                <div style="padding: 15px; background: rgba(0,0,0,0.3); border: 1px solid #333; margin-bottom: 25px;">
+                    <div style="font-size: 0.6em; color: #888; margin-bottom: 10px; font-family: 'Press Start 2P', cursive;">SAVE DATA</div>
+                    <textarea id="export-import-text" style="width: 100%; height: 60px; background: #111; color: #4ecdc4; border: 1px solid #333; font-family: 'VT323', monospace; font-size: 0.9em; padding: 8px; resize: none;" placeholder="Export/Import save data here..."></textarea>
+                    <div style="margin-top: 8px; text-align: center;">
+                        <button onclick="exportSave()" style="font-family: 'Press Start 2P', cursive; font-size: 0.4em; padding: 8px 16px; margin: 0 5px; border: 2px solid var(--accent-secondary); background: transparent; color: var(--accent-secondary); cursor: pointer;">EXPORT</button>
+                        <button onclick="if(importSave()){alert('Save imported!')}else{alert('Invalid save data')}" style="font-family: 'Press Start 2P', cursive; font-size: 0.4em; padding: 8px 16px; margin: 0 5px; border: 2px solid #ff6b9d; background: transparent; color: #ff6b9d; cursor: pointer;">IMPORT</button>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <button onclick="backToTitleFromPrestige()" style="font-family: 'Press Start 2P', cursive; background: linear-gradient(135deg, var(--accent-primary), #c44569); color: white; border: 4px solid var(--text-light); padding: 15px 30px; font-size: 0.7em; cursor: pointer; box-shadow: 0 6px 0 #661a3d, 0 10px 15px rgba(0,0,0,0.5);">BACK</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-screen">
+            <div id="music-controls"><button id="music-toggle" onclick="MusicEngine.toggleMute()">â™ª ON</button></div>
+            <div id="floor-indicator">FLOOR 1</div>
+            <div id="floor-modifiers" style="text-align: center; font-size: 0.5em; margin-bottom: 8px; min-height: 0; font-family: 'Press Start 2P', cursive;"></div>
+            <div id="game-area">
+                <div class="panel" id="buffs-panel" style="overflow-y: auto; max-height: 640px;">
+                    <h3 style="font-size: 0.9em; color: var(--accent-secondary); margin-bottom: 15px; text-align: center;">ACTIVE BUFFS</h3>
+                    <div id="buffs-list"></div>
+                </div>
+                <div class="panel" id="stats-panel">
+                    <h3>HERO STATUS</h3>
+                    <div class="stat-bar">
+                        <div class="stat-label">
+                            <span>HP</span>
+                            <span id="hp-text">100/100</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill hp-bar" id="hp-bar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-label">
+                            <span>MP</span>
+                            <span id="mp-text">50/50</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill mp-bar" id="mp-bar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-label">
+                            <span>XP</span>
+                            <span id="xp-text">0/100</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill xp-bar" id="xp-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span>Level:</span>
+                        <span id="level">1</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>ATK:</span>
+                        <span id="atk">10</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>DEF:</span>
+                        <span id="def">5</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>SPD:</span>
+                        <span id="spd">3</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Crit:</span>
+                        <span id="crit">5%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Luck:</span>
+                        <span id="luck">0</span>
+                    </div>
+
+                    <!-- Item Comparison Area -->
+                    <div id="comparison-area" style="margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--accent-secondary); display: none;">
+                        <h3 style="font-size: 0.6em; color: var(--accent-gold); margin-bottom: 10px; text-align: center;">COMPARING</h3>
+                        <div id="comparison-content"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <canvas id="game-canvas" width="640" height="640"></canvas>
+                </div>
+                
+                <div class="panel">
+                    <h3 style="font-size: 0.7em; color: var(--accent-gold); margin-bottom: 15px; text-align: center;">INVENTORY</h3>
+                    <div id="inventory"></div>
+                </div>
+            </div>
+            
+            <div id="log"></div>
+            
+            <div class="panel" style="margin-top: 20px;">
+                <div id="controls">
+                    <strong>CONTROLS:</strong><br>
+                    WASD/Arrows - Move | SPACE - Attack (Free!) | R - Special AOE Attack (10 MP)<br>
+                    E - Use Potion | Click items to equip/unequip | Collect potions from enemies!<br>
+                    Equip gear in 8 slots: Weapon, Helmet, Chest, Legs, Gloves, Boots, Cape, Relic | Luck boosts loot quality!
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top: 20px; padding: 20px;">
+                <h3 style="font-size: 0.9em; color: var(--accent-gold); margin-bottom: 15px; text-align: center;">BUFF LEGEND</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+
+                    <h4 style="font-size: 0.7em; color: var(--accent-gold); grid-column: 1 / -1; margin-top: 5px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 5px;">AFFINITY MILESTONES (Lv 5 / Lv 10)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: #ff6b6b;">ATK</span> â€” Lv 5: +5% base dmg | Lv 10: +10% base dmg</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: #4ecdc4;">DEF</span> â€” Lv 5: +5% base DEF | Lv 10: +10% base DEF</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: #ffd93d;">SPD</span> â€” Lv 5: +1 move speed | Lv 10: +1 move speed</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">CRIT</span> â€” Lv 5: +10% crit dmg | Lv 10: +20% crit dmg</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: #2ecc71;">LUCK</span> â€” Lv 5: +5% rarity | Lv 10: +10% rarity</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff6b6b; grid-column: 1 / -1; margin-top: 5px; border-bottom: 2px solid #ff6b6b; padding-bottom: 5px;">ATK AFFINITY</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: var(--accent-gold);">Berserker</span> â€” More ATK at low HP + flat % dmg per adjacent enemy (20-60%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: var(--accent-gold);">Executioner</span> â€” 25-50% more damage to enemies below 40% HP</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: var(--accent-gold);">Overwhelm</span> â€” First hit on a target deals 15-35% bonus damage</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: var(--accent-gold);">Redundant Force</span> â€” 5-20% increased ATK based on base ATK</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6b6b;"><span style="color: var(--accent-gold);">Overcharge</span> â€” Base ATK from level-ups multiplied by 1.5-3x (gear ATK unaffected)</div>
+
+                    <h4 style="font-size: 0.7em; color: #4ecdc4; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #4ecdc4; padding-bottom: 5px;">DEF AFFINITY</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Fortified</span> â€” Bonus defense (5-20%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Regeneration</span> â€” Heal % of max HP per turn (4-8%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Bulwark</span> â€” +20% damage per turn not moved (max 5 stacks, resets each floor)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Last Stand</span> â€” 50-80% DEF when below 25% HP</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Guardian Shell</span> â€” Taking damage grants 2-5% damage reduction per stack (max 5)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Iron Will</span> â€” 5-20% increased ATK based on base DEF</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Ironheart</span> â€” Base DEF from level-ups grants 1-3% damage reduction per point (cap 50%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #4ecdc4;"><span style="color: var(--accent-gold);">Tenacity</span> â€” Start each floor with shield = 15-40% base DEF. Unused shield â†’ bonus XP</div>
+
+                    <h4 style="font-size: 0.7em; color: #ffd93d; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ffd93d; padding-bottom: 5px;">SPD AFFINITY</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Swift</span> â€” Increase movement speed (5-10)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Evasion</span> â€” Chance to dodge attacks based on SPD (5-25%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Momentum</span> â€” Deal more damage based on SPD + bonus speed (5-25%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Adrenaline</span> â€” 10-25% SPD after killing an enemy (3 turns)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Phantom Step</span> â€” Moving near enemies deals 10-30% ATK as damage</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Fleetfoot Strikes</span> â€” 5-20% increased ATK based on base SPD</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Battle Tempo</span> â€” Move 3-6 tiles without damage for +50-100% next attack. Resets on hit</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ffd93d;"><span style="color: var(--accent-gold);">Adrenaline Surge</span> â€” On kill, gain 1 free move (max 1-3/turn). Doesn't trigger enemies</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff8800; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff8800; padding-bottom: 5px;">CRIT AFFINITY</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Critical</span> â€” Increase crit chance (5-25%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Deadeye</span> â€” Crit damage increased by 25-75%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Precision</span> â€” 5-20% crit chance per non-crit, resets on crit</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Weakpoint Specialist</span> â€” 10-30% more damage to bosses</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Shatterpoint</span> â€” Crits reduce enemy DEF by 10-30% for 2 turns</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Assassin</span> â€” 5-20% increased ATK based on base crit</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8800;"><span style="color: var(--accent-gold);">Lethal Focus</span> â€” 3 consecutive crits guarantee Legendary+ drop from next kill</div>
+
+                    <h4 style="font-size: 0.7em; color: #2ecc71; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #2ecc71; padding-bottom: 5px;">LUCK AFFINITY</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: var(--accent-gold);">Lucky</span> â€” Better loot drops (5-50)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: var(--accent-gold);">Chemist</span> â€” % chance to not consume potion (1-10%, caps at 50%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: var(--accent-gold);">Scrapper</span> â€” 50% chance for double discard progress</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: var(--accent-gold);">Lucky Ascension</span> â€” 1-5% chance gear drops as next rarity up</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #2ecc71;"><span style="color: var(--accent-gold);">Fortunate Strikes</span> â€” 5-20% increased ATK based on base luck</div>
+
+                    <h4 style="font-size: 0.7em; color: #aaa; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #aaa; padding-bottom: 5px;">UTILITY (No Affinity)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #aaa;"><span style="color: var(--accent-gold);">Vampiric</span> â€” Heal % of damage dealt (5-35%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #aaa;"><span style="color: var(--accent-gold);">Arcane</span> â€” MP cost reduction (10-40%)</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff8000; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff8000; padding-bottom: 5px;">LEGENDARY+ EXCLUSIVE PASSIVES</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Soulrend</span> â€” Attacks ignore % of enemy DEF (20-50%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Undying</span> â€” Survive lethal hit with 1 HP (cooldown per floor)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Speedster</span> â€” 20% base speed + 50% bonus damage from speed</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Kinetic Reserve</span> â€” Moving doubles next attack (max 4 stacks, 2x-16x)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Goldblood</span> â€” Luck also boosts ATK and DEF (10-30%)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Siphon</span> â€” Kills restore MP (10-30)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Psychic Flare</span> â€” AOE range +1 tile, costs 5 more MP</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8000;"><span style="color: #ff8000;">Doom Aura</span> â€” Enemies near you take scaling damage each turn (5-20 base)</div>
+
+                    <h4 style="font-size: 0.7em; color: #00ffcc; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #00ffcc; padding-bottom: 5px;">ASCENDED MEDALLIONS (Discard 10 Ascended items)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">Double Up</span> â€” Equip additional Weapon, Cape, and Relic</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">Lacerating Blows</span> â€” All hits crit + bleed (1/5 maxHP for 3 turns)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">Time Dilation</span> â€” Speed always 1.5x faster than enemies</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">8-Leaf Clover</span> â€” Items always spawn with max base and buff values</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">Soul Forge</span> â€” Discarding items grants +1 to a random base stat</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,255,204,0.1); border-left: 3px solid #00ffcc;"><span style="color: #00ffcc;">Chrono Strike</span> â€” Every 4th attack hits twice (2nd hit at 50% damage)</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff00ff; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff00ff; padding-bottom: 5px;">DUAL PASSIVES (Lv 5 in two Affinities, max 2 active)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Unyielding Force</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>: Damage taken charges next attack +30% per stack (max 3)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Blitz Strike</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>: Move 4 tiles without attacking â†’ +100% damage + 1 free move</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Executioner's Mark</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ff8800">CRIT</span>: +75% damage to enemies below 30% HP. Crit kills guarantee gear</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Plunderer</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#2ecc71">LUCK</span>: Overkill damage â†’ temp LUCK at 100:1 ratio per floor</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Evasive Bulwark</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>: Dodging grants 15% max HP shield for 3 turns</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Thorned Armor</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>: Reflect 20% incoming damage (can crit)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Fortune's Guard</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#2ecc71">LUCK</span>: 15% chance to survive lethal at 1 HP + free potion (1/floor)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Phantom Assault</span> â€” <span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>: Move 2+ tiles â†’ +30% crit chance, crit grants free move</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Windfall</span> â€” <span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>: Free moves have 20% chance to spawn loot</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,0,255,0.08); border-left: 3px solid #ff00ff;"><span style="color: #ff00ff;">Jackpot</span> â€” <span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>: Crit kills have 10% chance for double loot drops</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff8800; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff8800; padding-bottom: 5px;">MASTERY PASSIVES â€” Dual (Lv 8 in two Affinities, Legendary+ only)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">War Machine</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>: Damage adds 25% of total DEF. Bypasses Phase Shift</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Berserker's Fury</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>: Kills grant +3% ATK (max +30%) + 1 free move</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Lethal Precision</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ff8800">CRIT</span>: Crits deal 3x base. Non-crits +15% bonus</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Blood Tithe</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#2ecc71">LUCK</span>: 25% potion on kill. Overkill heals 10%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Living Fortress</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>: Hits &lt;10% max HP deal 0. +2 SPD for 2 turns</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Iron Retaliation</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>: Counterattack for 100% DEF when hit. Can crit</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Providence</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#2ecc71">LUCK</span>: 20% halve incoming damage. Gear gets +1 passive slot</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Flash Point</span> â€” <span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>: 1st attack each floor crits. Every 3rd attack crits</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Treasure Sense</span> â€” <span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>: Hidden treasure tiles per floor. SPD boosts detection range</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Fortune's Edge</span> â€” <span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>: 30% crit kills upgrade drop rarity by 1 tier</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff8800; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff8800; padding-bottom: 5px;">MASTERY PASSIVES â€” Tri (Lv 8 in three Affinities, Legendary+ only)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Warlord</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>: ATK/DEF gain +15% of each other. +1 SPD per 50 ATK+DEF</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Deathbringer</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>: 2x damage to &lt;50% HP enemies. Kill tough foes â†’ heal 25%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Pirate King</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#4ecdc4">DEF</span>+<span style="color:#2ecc71">LUCK</span>: All drops Rare+. Bosses always drop 2 items</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Storm Dancer</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>: Move 3+ tiles â†’ AOE crit in 2-tile radius. 5-turn CD</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Gambler's Ruin</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>: 10% for 3x dmg, 5% for 0. Free moves spawn gold tiles</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Bastion</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>: Move through enemies â†’ 50% DEF dmg. Crit stuns 1 turn</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Lucky Star</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ffd93d">SPD</span>+<span style="color:#2ecc71">LUCK</span>: 30% potion on dodge. Lethal â†’ teleport to safety (1/floor)</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Assassin's Creed</span> â€” <span style="color:#ff6b6b">ATK</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>: Crits ignore 100% DEF. 2x crit chance vs full HP</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Mirage</span> â€” <span style="color:#ffd93d">SPD</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>: 15% attacks phase through. After phase â†’ next crit +50%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(255,136,0,0.08); border-left: 3px solid #ff8800;"><span style="color: #ff8800;">Chaos Engine</span> â€” <span style="color:#4ecdc4">DEF</span>+<span style="color:#ff8800">CRIT</span>+<span style="color:#2ecc71">LUCK</span>: Random stat +10%/turn. Blocking â†’ counterattack + stun</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff4444; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff4444; padding-bottom: 5px;">FLOOR MODIFIERS (Floor 35+)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #8899aa;"><span style="color: #8899aa;">Ironclad</span> â€” All enemies gain +50% DEF</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff4444;"><span style="color: #ff4444;">Frenzied</span> â€” Enemies attack twice per turn</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #cc44cc;"><span style="color: #cc44cc;">Vampiric Horde</span> â€” Enemies heal 10% of damage dealt</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #44aaff;"><span style="color: #44aaff;">Phase Shift</span> â€” Enemies have 20% chance to dodge</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff6600;"><span style="color: #ff6600;">Convergence</span> â€” Enemies gain +15% ATK per turn you stand still (max 5 stacks, resets on move)</div>
+
+                    <h4 style="font-size: 0.7em; color: #9966ff; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #9966ff; padding-bottom: 5px;">SPECIAL ENEMIES</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(153,102,255,0.08); border-left: 3px solid #9966ff;"><span style="color: #9966ff;">Arcane Ward (F25+)</span> â€” Takes only 25% AOE damage. Must be killed with melee attacks</div>
+
+                    <h4 style="font-size: 0.7em; color: #ff8844; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #ff8844; padding-bottom: 5px;">AOE MECHANICS</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8844;"><span style="color: #ff8844;">Mana Burn</span> â€” Each consecutive AOE without moving costs +3 MP. Move to reset</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff8844;"><span style="color: #ff8844;">Floor Scaling</span> â€” AOE base cost increases by +1 MP per 15 floors</div>
+
+                    <h4 style="font-size: 0.7em; color: #880044; grid-column: 1 / -1; margin-top: 10px; border-bottom: 2px solid #880044; padding-bottom: 5px;">PLAYER DEBUFFS (Floor 35+)</h4>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #aa8844;"><span style="color: #aa8844;">Corrosion (F35)</span> â€” DEF reduced by 15%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #886644;"><span style="color: #886644;">Fatigue (F40)</span> â€” Potions heal 25% less</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #664488;"><span style="color: #664488;">Entropy (F45)</span> â€” Passive effect values reduced by 10%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #880044;"><span style="color: #880044;">Cursed Blood (F50)</span> â€” All healing reduced by 40%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #cc6622;"><span style="color: #cc6622;">Withering (F55)</span> â€” ATK reduced by 10%</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #440088;"><span style="color: #440088;">Void Siphon (F60)</span> â€” Lose 1 MP per tile moved</div>
+                    <div style="font-size: 0.6em; padding: 6px; background: rgba(0,0,0,0.3); border-left: 3px solid #ff0000;"><span style="color: #ff0000;">Death's Countdown (F65)</span> â€” 40-turn timer per floor</div>
+                </div>
+            </div>
+        </div>
+        <div id="levelup-overlay">
+            <div class="levelup-panel">
+                <h2>LEVEL UP!</h2>
+                <div class="stat-points-left">Points remaining: <span id="stat-points-remaining">5</span></div>
+                <div id="stat-alloc-options"></div>
+                <button class="levelup-confirm" id="levelup-confirm-btn" onclick="confirmLevelUp()" disabled>CONFIRM</button>
+            </div>
+        </div>
+
+        <div id="affinity-overlay">
+            <div class="levelup-panel" style="border-color: var(--accent-secondary); box-shadow: 0 0 60px rgba(78, 205, 196, 0.5);">
+                <h2 style="color: var(--accent-secondary);">AFFINITIES</h2>
+                <div class="stat-points-left" style="color: var(--accent-secondary);">Points remaining: <span id="affinity-points-remaining">1</span></div>
+                <div style="font-size: 0.5em; color: #aaa; margin-bottom: 15px;">Increase the chance of gear dropping with buffs from an affinity</div>
+                <div id="affinity-alloc-options"></div>
+                <button class="levelup-confirm" style="background: linear-gradient(135deg, var(--accent-secondary), #2a8a83);" id="affinity-confirm-btn" onclick="confirmAffinityAlloc()" disabled>CONFIRM</button>
+            </div>
+        </div>
+
+        <div id="sacrifice-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center;">
+            <div class="levelup-panel" style="border-color: #cc44ff; box-shadow: 0 0 60px rgba(136, 0, 170, 0.5); max-width: 500px;">
+                <h2 style="color: #cc44ff;">SACRIFICE ALTAR</h2>
+                <div style="font-size: 0.5em; color: #aaa; margin-bottom: 15px;">Sacrifice an equipped item to absorb 1-5% of its buff values as permanent base stats</div>
+                <div id="sacrifice-item-list" style="max-height: 300px; overflow-y: auto;"></div>
+                <button class="levelup-confirm" style="background: linear-gradient(135deg, #8800aa, #440055); margin-top: 10px;" onclick="closeSacrificeScreen()">LEAVE ALTAR</button>
+            </div>
+        </div>
+
+        <div id="dual-passive-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:1002; justify-content:center; align-items:center;">
+            <div class="levelup-panel" style="border-color: #ff00ff; box-shadow: 0 0 60px rgba(255,0,255,0.5); max-width: 550px;">
+                <h2 style="color: #ff00ff;">DUAL PASSIVE UNLOCKED</h2>
+                <div id="dual-passive-subtitle" style="font-size: 0.5em; color: #aaa; margin-bottom: 15px;"></div>
+                <div id="dual-passive-options" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="music.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
