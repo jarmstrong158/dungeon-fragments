@@ -1,4 +1,59 @@
 ﻿        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+        /* Class select cards */
+        .class-card {
+            background: linear-gradient(160deg, var(--bg-mid), #0d1228);
+            border: 3px solid var(--accent-secondary);
+            padding: 24px 20px;
+            width: 260px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            font-family: 'VT323', monospace;
+            color: var(--text-light);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.35);
+            text-align: left;
+        }
+        .class-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.35), 0 0 20px rgba(255,217,61,0.3);
+        }
+        .class-card h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        .class-card .tagline {
+            font-size: 1.05em;
+            color: var(--accent-secondary);
+            margin-bottom: 14px;
+            font-style: italic;
+        }
+        .class-card .desc {
+            font-size: 1em;
+            margin-bottom: 18px;
+            line-height: 1.4;
+            min-height: 4em;
+        }
+        .class-card .kit-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55em;
+            color: var(--accent-gold);
+            margin-top: 12px;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        .class-card .kit-line {
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+        .class-card .kit-line.affinity { color: #ff9eb5; }
+        .class-card .kit-line.item { color: #9fe8ff; }
+        .class-card .kit-line.passive {
+            color: #f8e6a0;
+            font-size: 0.9em;
+            padding-left: 12px;
+        }
         
         * {
             margin: 0;

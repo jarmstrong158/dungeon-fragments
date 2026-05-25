@@ -72,11 +72,22 @@ shapes the encounter:
 Bosses, Rare Bosses, and Elites keep grunt AI but stack on top via the
 existing modifier system (Phase Shift, Ironclad, Frenzied, Vampiric, Convergence).
 
+## Classes
+
+Picked on the class-select screen before a run begins. Each class gives
+starting Affinity and a unique starter item with a baked-in passive.
+
+| Class     | Identity                                     | Starts with                                         |
+|-----------|----------------------------------------------|-----------------------------------------------------|
+| Brawler   | Wade in. Hit harder when surrounded.         | +5 ATK affinity, Cracked Hatchet (+6 ATK, Berserker 25%) |
+| Trickster | Keep moving. Drops more loot, faster moves.  | +3 SPD / +2 LUCK affinity, Loaded Dice (Lucky 5, Swift 5) |
+| Sentinel  | Hold the line. Reward patience.              | +5 DEF affinity, Battered Cuirass (+4 DEF, Bulwark 1, Fortified 10%) |
+
 ## Roadmap
 
 - [x] **Enemy variety** — Charger / Ranger / Healer kinds with distinct AI.
-- [ ] **Starting classes** — 3–4 class kits that diverge from turn 1 (starting Affinity + starter passive + starter gear).
-- [ ] **Build variety** — buff stationary archetypes (Bulwark, Tenacity), now that anti-kite pressure exists.
+- [x] **Starting classes** — Brawler / Trickster / Sentinel diverge from turn 1.
+- [ ] **Build variety** — buff stationary archetypes further, audit Kinetic Reserve dominance.
 
 ## Tech notes
 

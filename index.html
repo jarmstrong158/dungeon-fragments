@@ -12,9 +12,16 @@
             <h1>DUNGEON FRAGMENTS</h1>
             <div class="subtitle">~ A Roguelite Adventure ~</div>
             <div id="title-fragments" style="font-family: 'VT323', monospace; color: var(--accent-gold); font-size: 0.9em; margin-bottom: 15px; min-height: 1.2em;"></div>
-            <button onclick="startGame()">START GAME</button>
+            <button onclick="showClassScreen()">START GAME</button>
             <button onclick="showPrestigeShop()">PRESTIGE SHOP</button>
             <button onclick="showInstructions()">INSTRUCTIONS</button>
+        </div>
+
+        <div id="class-screen" style="display: none; text-align: center; animation: fadeIn 0.5s ease-in;">
+            <h2 style="color: var(--accent-primary); font-size: 1.6em; margin-bottom: 10px;">CHOOSE YOUR CLASS</h2>
+            <p style="color: var(--text-light); font-family: 'VT323', monospace; font-size: 1.2em; margin-bottom: 40px;">~ Your starting Affinity and a unique starter item ~</p>
+            <div id="class-cards" style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; max-width: 1200px; margin: 0 auto;"></div>
+            <button onclick="hideClassScreen()" style="margin-top: 30px; font-size: 0.8em; padding: 12px 24px;">BACK</button>
         </div>
         
         <div id="instructions-screen" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; z-index: 500; background: linear-gradient(135deg, #0a0e27 0%, #1a1042 100%);">

@@ -743,6 +743,59 @@ function pickEnemyKind(floor) {
     return "grunt";
 }
 
+// Player classes — each defines starting Affinity boosts and a starter kit item with a baked-in passive.
+// Picked at the title screen before the run begins.
+const CLASSES = {
+    brawler: {
+        id: "brawler",
+        name: "Brawler",
+        color: "#ff6b6b",
+        tagline: "Wade in. Hit harder when surrounded.",
+        desc: "Direct, aggressive. Damage scales with adjacent enemies. Punishes positioning errors — yours and theirs.",
+        startingAffinity: { ATK: 5, DEF: 0, SPD: 0, CRIT: 0, LUCK: 0 },
+        starterItem: {
+            name: "Cracked Hatchet",
+            type: "weapon",
+            atk: 6, def: 0,
+            passives: [{ name: "Berserker", stat: "berserker", value: 25, desc: "More ATK at low HP + flat % damage per adjacent enemy" }]
+        }
+    },
+    trickster: {
+        id: "trickster",
+        name: "Trickster",
+        color: "#ffd93d",
+        tagline: "Keep moving. The dungeon rewards motion.",
+        desc: "Hit-and-run. Higher Speed + Luck means more drops, faster moves, more chase distance from melee.",
+        startingAffinity: { ATK: 0, DEF: 0, SPD: 3, CRIT: 0, LUCK: 2 },
+        starterItem: {
+            name: "Loaded Dice",
+            type: "relic",
+            atk: 0, def: 0,
+            passives: [
+                { name: "Lucky", stat: "luck", value: 5, desc: "+5 effective LUCK" },
+                { name: "Swift", stat: "speed", value: 5, desc: "+5 effective SPD" }
+            ]
+        }
+    },
+    sentinel: {
+        id: "sentinel",
+        name: "Sentinel",
+        color: "#4ecdc4",
+        tagline: "Hold the line. Reward patience.",
+        desc: "Stationary archetype. Damage and defence grow each turn you don't move. Slow start, devastating endgame.",
+        startingAffinity: { ATK: 0, DEF: 5, SPD: 0, CRIT: 0, LUCK: 0 },
+        starterItem: {
+            name: "Battered Cuirass",
+            type: "chest",
+            atk: 0, def: 4,
+            passives: [
+                { name: "Bulwark", stat: "bulwark", value: 1, desc: "Stacking damage bonus per turn standing still" },
+                { name: "Fortified", stat: "fortify", value: 10, desc: "+10% DEF" }
+            ]
+        }
+    }
+};
+
 // Player debuffs â€” permanent per floor threshold, stacking
 const PLAYER_DEBUFFS = [
     { floor: 35, name: "Corrosion", desc: "DEF reduced by 15%", stat: "corrosion", color: "#aa8844" },
@@ -4785,8 +4838,55 @@ function applyPrestigeBonuses() {
     p.mp = p.maxMp;
 }
 
+// Class select flow — START GAME now goes here first.
+function showClassScreen() {
+    document.getElementById('title-screen').style.display = "none";
+    const screen = document.getElementById('class-screen');
+    screen.style.display = "block";
+    const cards = document.getElementById('class-cards');
+    cards.innerHTML = '';
+    Object.values(CLASSES).forEach(cls => {
+        const card = document.createElement('div');
+        card.className = 'class-card';
+        card.style.borderColor = cls.color;
+        const affLines = Object.entries(cls.startingAffinity)
+            .filter(([k, v]) => v > 0)
+            .map(([k, v]) => `+${v} ${k}`)
+            .join(', ');
+        const passiveLines = cls.starterItem.passives.map(p =>
+            `<div class="kit-line passive">• ${p.name} ${p.value}</div>`
+        ).join('');
+        const statLine = (cls.starterItem.atk > 0 ? `+${cls.starterItem.atk} ATK` : '')
+            + (cls.starterItem.atk > 0 && cls.starterItem.def > 0 ? ', ' : '')
+            + (cls.starterItem.def > 0 ? `+${cls.starterItem.def} DEF` : '');
+        card.innerHTML =
+            `<h3 style="color: ${cls.color}">${cls.name.toUpperCase()}</h3>` +
+            `<div class="tagline">"${cls.tagline}"</div>` +
+            `<div class="desc">${cls.desc}</div>` +
+            `<div class="kit-label">STARTING AFFINITY</div>` +
+            `<div class="kit-line affinity">${affLines}</div>` +
+            `<div class="kit-label">STARTER ITEM</div>` +
+            `<div class="kit-line item">${cls.starterItem.name} (${statLine})</div>` +
+            passiveLines;
+        card.onclick = () => selectClass(cls.id);
+        cards.appendChild(card);
+    });
+}
+
+function hideClassScreen() {
+    document.getElementById('class-screen').style.display = "none";
+    document.getElementById('title-screen').style.display = "block";
+}
+
+function selectClass(classId) {
+    gameState.selectedClass = classId;
+    document.getElementById('class-screen').style.display = "none";
+    startGame();
+}
+
 function startGame() {
     document.getElementById('title-screen').style.display = "none";
+    document.getElementById('class-screen').style.display = "none";
     document.getElementById('prestige-shop-screen').style.display = "none";
     document.getElementById('game-screen').style.display = "block";
     gameState.gameRunning = true;
@@ -4794,11 +4894,34 @@ function startGame() {
     // Apply prestige bonuses before anything else
     applyPrestigeBonuses();
 
-    // Always start with a random weapon
+    // Apply class kit: starting Affinity + starter item.
+    // Default to Brawler if no class was selected (e.g. legacy entry points).
+    const cls = CLASSES[gameState.selectedClass] || CLASSES.brawler;
+    Object.entries(cls.startingAffinity).forEach(([stat, val]) => {
+        gameState.player.affinities[stat] = (gameState.player.affinities[stat] || 0) + val;
+    });
+    if (cls.starterItem) {
+        // Build a real inventory item from the class definition.
+        const item = {
+            name: cls.starterItem.name,
+            type: cls.starterItem.type,
+            rarity: RARITIES.COMMON,
+            atk: cls.starterItem.atk || 0,
+            def: cls.starterItem.def || 0,
+            passives: (cls.starterItem.passives || []).map(p => ({ ...p }))
+        };
+        gameState.player.inventory.push(item);
+        // Auto-equip the starter into its slot if empty.
+        if (!gameState.player.equipped[item.type]) {
+            gameState.player.equipped[item.type] = item;
+        }
+    }
+
+    // Always start with a random weapon (Brawler already has one — they get two)
     const starterWeapon = generateLoot(false);
     starterWeapon.type = "weapon";
     starterWeapon.name = WEAPONNAMES[Math.floor(Math.random() * WEAPONNAMES.length)];
-    // Weapon Cache â€” guarantee better starter rarity
+    // Weapon Cache — guarantee better starter rarity
     const wc = getPrestigeLevel('weaponCache');
     if (wc >= 2) starterWeapon.rarity = RARITIES.RARE;
     else if (wc >= 1) starterWeapon.rarity = RARITIES.UNCOMMON;
@@ -4817,7 +4940,7 @@ function startGame() {
     }
     MusicEngine.start();
 
-    // Affinity Initiate â€” free affinity point at game start
+    // Affinity Initiate — free affinity point at game start
     if (getPrestigeLevel('affinityInitiate') >= 1) {
         gameState.pendingAffinityPoints = gameState.pendingAffinityPoints > 0 ? gameState.pendingAffinityPoints : 1;
         showAffinityScreen();
@@ -5089,6 +5212,9 @@ document.addEventListener('keydown', (e) => {
 
 // Expose some functions to buttons
 window.startGame = startGame;
+window.showClassScreen = showClassScreen;
+window.hideClassScreen = hideClassScreen;
+window.selectClass = selectClass;
 window.showInstructions = showInstructions;
 window.backToTitleFromInstructions = backToTitleFromInstructions;
 window.retryGame = retryGame;
