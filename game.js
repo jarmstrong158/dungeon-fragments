@@ -48,7 +48,10 @@ const CONFIG = {
         manaBurnPerStack: 3,          // +MP per stacked AOE without moving
         psychicFlareExtraCost: 5,
         kineticStackMax: 4,
-        kineticBaseMultiplier: 2,     // 2^stacks
+        kineticPerStack: 0.6,         // additive: damage *= 1 + perStack * stacks (was 2^stacks pre-overhaul)
+        bulwarkDmgPerStack: 0.20,     // +20% damage per stack
+        bulwarkDefPerStack: 0.05,     // +5% DEF per stack
+        bulwarkStackMax: 5,
         bleedFraction: 1 / 5,         // bleed dmg = maxHp * this
         bleedDuration: 3,
         chronoStrikeCadence: 4,       // every Nth attack triggers
@@ -58,6 +61,17 @@ const CONFIG = {
         lastStandThreshold: 0.25,
         siphonMaxPerKill: 15,         // hard cap on MP restore per kill
     },
+    enemyKinds: {
+        // Spawn weights — relative odds vs Grunt(100)
+        chargerWeight: 35,
+        rangerWeight: 20,
+        healerWeight: 20,             // bumped from 10 — was too rare to shape encounters
+        // Behaviour tuning
+        chargerDashDist: 3,           // tiles per dash
+        rangerFireRange: 6,           // max orthogonal range to fire
+        healerHealPct: 0.08,          // % of ally's maxHp restored per heal
+        healerHealRange: 2,           // manhattan range
+    },
     items: {
         maxPotions: 50,
     },
@@ -65,6 +79,7 @@ const CONFIG = {
 
 // Game state
 let gameState = {
+    selectedClass: null, // set by selectClass(); read by startGame() to apply class kit
     player: {
         x: 10,
         y: 10,
@@ -263,7 +278,12 @@ const defaultPrestigeData = {
     lifetimeStats: {
         highestFloor: 0, highestLevel: 0, totalKills: 0, totalBossKills: 0, totalRareBossKills: 0,
         totalItemsCollected: 0, totalLegendaryItems: 0, totalMythicItems: 0, totalAscendedItems: 0,
-        bestRunFragments: 0
+        bestRunFragments: 0,
+        // Per-class telemetry — see incrementClassRun / recordClassDeath.
+        // Keys match CLASSES ids. Lets future balance passes work from data, not vibes.
+        runsByClass:        { brawler: 0, trickster: 0, sentinel: 0 },
+        floorsByClass:      { brawler: 0, trickster: 0, sentinel: 0 },
+        highestFloorByClass:{ brawler: 0, trickster: 0, sentinel: 0 }
     },
     bestRun: { floor: 0, level: 0, kills: 0, fragments: 0 }
 };
@@ -555,8 +575,28 @@ const ENEMY_MODIFIERS = [
     { name: "Convergence", desc: "Enemies gain +15% ATK per turn you stand still (max 5)", stat: "convergence", color: "#ff6600" }
 ];
 
+// AI helpers shared by all ENEMY_KINDS behaviours.
+function manhattan(ax, ay, bx, by) {
+    return Math.abs(ax - bx) + Math.abs(ay - by);
+}
+function clampToGrid(e) {
+    e.x = Math.max(0, Math.min(GRIDSIZE - 1, e.x));
+    e.y = Math.max(0, Math.min(GRIDSIZE - 1, e.y));
+}
+// Pick a single-axis step from `e` toward `target`, biased to the dominant axis.
+// sign = +1 to approach, -1 to retreat.
+function stepAlongDominantAxis(e, target, sign) {
+    const dx = target.x - e.x, dy = target.y - e.y;
+    if (dx === 0 && dy === 0) return;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        e.x += sign * (dx > 0 ? 1 : -1);
+    } else {
+        e.y += sign * (dy > 0 ? 1 : -1);
+    }
+}
+
 // Enemy kinds — each defines stat overrides + AI behaviour.
-// AI behaviour signatures: ai(enemy, p, helpers) where helpers = { processEnemyAttack, signalHit, addLog }.
+// AI behaviour signature: ai(enemy, p, helpers) where helpers = { attack }.
 // Default kind is "grunt" (legacy chase-and-melee behaviour). Bosses keep grunt AI.
 const ENEMY_KINDS = {
     grunt: {
@@ -566,7 +606,7 @@ const ENEMY_KINDS = {
         hpMult: 1, atkMult: 1, defMult: 1,
         minFloor: 1, weight: 100,
         ai: function(enemy, p, h) {
-            const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
+            const dist = manhattan(enemy.x, enemy.y, p.x, p.y);
             if (dist <= 1) {
                 h.attack(enemy);
             } else {
@@ -576,52 +616,50 @@ const ENEMY_KINDS = {
         }
     },
     charger: {
-        // Heavy, slow telegraph then dash 3 tiles dealing damage in path.
-        // Punishes kiting — if you're 3-4 tiles away, the charge will catch you.
+        // Telegraph one turn, then dash N tiles toward player on the dominant axis.
+        // Dash direction is recomputed at dash time (not telegraph time) so walking
+        // perpendicular doesn't trivially escape — the warning is "I will attack",
+        // not "I will attack along this specific arrow".
         id: "charger",
         name: "Charger",
         color: "#a0522d",
         hpMult: 1.5, atkMult: 1.2, defMult: 0.7,
-        minFloor: 5, weight: 35,  // Bumped from 25 — anti-kite pressure
+        minFloor: 5,
+        get weight() { return CONFIG.enemyKinds.chargerWeight; },
         ai: function(enemy, p, h) {
-            const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
-            // If adjacent, melee like a grunt.
+            const dist = manhattan(enemy.x, enemy.y, p.x, p.y);
+            // Adjacent — melee like a grunt and clear any windup.
             if (dist <= 1) {
                 h.attack(enemy);
                 enemy.chargeWindup = 0; enemy.chargeDx = 0; enemy.chargeDy = 0;
                 return;
             }
-            // Charge release: dash up to 3 tiles in telegraphed direction.
+            // Charge release: recompute dominant axis NOW and dash up to N tiles.
             if (enemy.chargeWindup > 0) {
                 enemy.chargeWindup = 0;
-                const dx = enemy.chargeDx, dy = enemy.chargeDy;
+                const adx = p.x - enemy.x, ady = p.y - enemy.y;
+                let dx, dy;
+                if (Math.abs(adx) >= Math.abs(ady)) { dx = adx > 0 ? 1 : -1; dy = 0; }
+                else                                 { dx = 0; dy = ady > 0 ? 1 : -1; }
+                enemy.chargeDx = dx; enemy.chargeDy = dy;
                 let steps = 0;
-                for (let i = 0; i < 3; i++) {
-                    const nx = enemy.x + dx;
-                    const ny = enemy.y + dy;
+                for (let i = 0; i < CONFIG.enemyKinds.chargerDashDist; i++) {
+                    const nx = enemy.x + dx, ny = enemy.y + dy;
                     if (nx < 0 || nx >= GRIDSIZE || ny < 0 || ny >= GRIDSIZE) break;
                     enemy.x = nx; enemy.y = ny;
                     steps++;
-                    // Player in the path?
                     if (enemy.x === p.x && enemy.y === p.y) {
-                        // Bumped into player — stop, deal a heavy attack.
                         h.attack(enemy);
-                        // Knock back one tile so they're adjacent, not overlapping.
-                        enemy.x -= dx; enemy.y -= dy;
+                        enemy.x -= dx; enemy.y -= dy; // back off so we're adjacent, not overlapping
                         break;
                     }
                 }
                 if (steps > 0) addLog("Charger dashes!", "log-damage");
                 return;
             }
-            // Telegraph: pick the dominant axis toward player.
-            const adx = p.x - enemy.x, ady = p.y - enemy.y;
-            if (Math.abs(adx) >= Math.abs(ady)) {
-                enemy.chargeDx = adx > 0 ? 1 : -1; enemy.chargeDy = 0;
-            } else {
-                enemy.chargeDx = 0; enemy.chargeDy = ady > 0 ? 1 : -1;
-            }
+            // Telegraph (no committed direction — that's resolved at dash time).
             enemy.chargeWindup = 1;
+            enemy.chargeDx = 0; enemy.chargeDy = 0;
         }
     },
     ranger: {
@@ -631,14 +669,15 @@ const ENEMY_KINDS = {
         name: "Ranger",
         color: "#ff9933",
         hpMult: 0.7, atkMult: 0.9, defMult: 0.8,
-        minFloor: 8, weight: 20,
+        minFloor: 8,
+        get weight() { return CONFIG.enemyKinds.rangerWeight; },
         ai: function(enemy, p, h) {
             const dx = p.x - enemy.x, dy = p.y - enemy.y;
             const dist = Math.abs(dx) + Math.abs(dy);
-            // Fire if orthogonal-aligned within 6 tiles.
             const aligned = (dx === 0 || dy === 0);
-            if (aligned && dist > 0 && dist <= 6) {
-                enemy.arrowFlash = 2; // 2 frames of arrow visual
+            // Fire if orthogonal-aligned within range.
+            if (aligned && dist > 0 && dist <= CONFIG.enemyKinds.rangerFireRange) {
+                enemy.arrowFlash = 2;
                 enemy.arrowDx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
                 enemy.arrowDy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
                 enemy.arrowDist = dist;
@@ -646,32 +685,15 @@ const ENEMY_KINDS = {
                 h.attack(enemy);
                 return;
             }
-            // Reposition: keep distance 3–5.
-            if (dist < 3) {
-                // Step away on the more-extreme axis.
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    enemy.x -= dx > 0 ? 1 : -1;
-                } else if (dy !== 0) {
-                    enemy.y -= dy > 0 ? 1 : -1;
-                }
-            } else if (dist > 5) {
-                // Step toward player on the more-extreme axis.
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    enemy.x += dx > 0 ? 1 : -1;
-                } else if (dy !== 0) {
-                    enemy.y += dy > 0 ? 1 : -1;
-                }
-            } else {
-                // In range but not aligned — sidestep to align.
-                if (Math.abs(dx) < Math.abs(dy)) {
-                    enemy.x += dx > 0 ? 1 : (dx < 0 ? -1 : 0);
-                } else {
-                    enemy.y += dy > 0 ? 1 : (dy < 0 ? -1 : 0);
-                }
+            // Reposition: keep distance 3-5; sidestep to align if already in range.
+            if (dist < 3)              stepAlongDominantAxis(enemy, p, -1);
+            else if (dist > 5)         stepAlongDominantAxis(enemy, p, +1);
+            else {
+                // In range but not aligned — sidestep on the *minor* axis to align orthogonally.
+                if (Math.abs(dx) < Math.abs(dy)) enemy.x += dx > 0 ? 1 : (dx < 0 ? -1 : 0);
+                else                              enemy.y += dy > 0 ? 1 : (dy < 0 ? -1 : 0);
             }
-            // Clamp to grid.
-            enemy.x = Math.max(0, Math.min(GRIDSIZE - 1, enemy.x));
-            enemy.y = Math.max(0, Math.min(GRIDSIZE - 1, enemy.y));
+            clampToGrid(enemy);
         }
     },
     healer: {
@@ -680,15 +702,16 @@ const ENEMY_KINDS = {
         name: "Healer",
         color: "#27ae60",
         hpMult: 0.6, atkMult: 0.5, defMult: 1.0,
-        minFloor: 12, weight: 10,
+        minFloor: 12,
+        get weight() { return CONFIG.enemyKinds.healerWeight; },
         ai: function(enemy, p, h) {
-            // Heal adjacent enemies (excluding self).
+            // Heal nearby enemies (excluding self).
             let healed = 0;
-            const healPct = 0.08;
+            const healPct = CONFIG.enemyKinds.healerHealPct;
+            const healRange = CONFIG.enemyKinds.healerHealRange;
             gameState.enemies.forEach(other => {
                 if (other === enemy || other.hp <= 0) return;
-                const d = Math.abs(other.x - enemy.x) + Math.abs(other.y - enemy.y);
-                if (d <= 2 && other.hp < other.maxHp) {
+                if (manhattan(other.x, other.y, enemy.x, enemy.y) <= healRange && other.hp < other.maxHp) {
                     const heal = Math.max(1, Math.floor(other.maxHp * healPct));
                     other.hp = Math.min(other.maxHp, other.hp + heal);
                     healed++;
@@ -699,34 +722,20 @@ const ENEMY_KINDS = {
                 addLog(`Healer mends ${healed} ally${healed > 1 ? "ies" : ""}!`, "log-loot");
             }
             // Movement: keep distance from player; cluster with allies.
-            const dxp = p.x - enemy.x, dyp = p.y - enemy.y;
-            const distp = Math.abs(dxp) + Math.abs(dyp);
+            const distp = manhattan(enemy.x, enemy.y, p.x, p.y);
             if (distp <= 2) {
-                // Too close to player — back off.
-                if (Math.abs(dxp) > Math.abs(dyp)) {
-                    enemy.x -= dxp > 0 ? 1 : -1;
-                } else if (dyp !== 0) {
-                    enemy.y -= dyp > 0 ? 1 : -1;
-                }
+                stepAlongDominantAxis(enemy, p, -1); // back away
             } else {
                 // Find nearest ally and drift toward them.
                 let nearest = null, nd = Infinity;
                 gameState.enemies.forEach(other => {
                     if (other === enemy || other.hp <= 0) return;
-                    const d = Math.abs(other.x - enemy.x) + Math.abs(other.y - enemy.y);
+                    const d = manhattan(other.x, other.y, enemy.x, enemy.y);
                     if (d < nd) { nd = d; nearest = other; }
                 });
-                if (nearest && nd > 2) {
-                    const adx = nearest.x - enemy.x, ady = nearest.y - enemy.y;
-                    if (Math.abs(adx) > Math.abs(ady)) {
-                        enemy.x += adx > 0 ? 1 : -1;
-                    } else if (ady !== 0) {
-                        enemy.y += ady > 0 ? 1 : -1;
-                    }
-                }
+                if (nearest && nd > 2) stepAlongDominantAxis(enemy, nearest, +1);
             }
-            enemy.x = Math.max(0, Math.min(GRIDSIZE - 1, enemy.x));
-            enemy.y = Math.max(0, Math.min(GRIDSIZE - 1, enemy.y));
+            clampToGrid(enemy);
         }
     }
 };
@@ -765,15 +774,16 @@ const CLASSES = {
         name: "Trickster",
         color: "#ffd93d",
         tagline: "Keep moving. The dungeon rewards motion.",
-        desc: "Hit-and-run. Higher Speed + Luck means more drops, faster moves, more chase distance from melee.",
-        startingAffinity: { ATK: 0, DEF: 0, SPD: 3, CRIT: 0, LUCK: 2 },
+        desc: "Hit-and-run. Speed + Luck for drops; Phantom Step damages adjacent enemies after every move.",
+        startingAffinity: { ATK: 0, DEF: 0, SPD: 3, CRIT: 5, LUCK: 2 },
         starterItem: {
             name: "Loaded Dice",
             type: "relic",
             atk: 0, def: 0,
             passives: [
                 { name: "Lucky", stat: "luck", value: 5, desc: "+5 effective LUCK" },
-                { name: "Swift", stat: "speed", value: 5, desc: "+5 effective SPD" }
+                { name: "Swift", stat: "speed", value: 5, desc: "+5 effective SPD" },
+                { name: "Phantom Step", stat: "phantomStep", value: 15, desc: "After moving, deal 15% ATK to adjacent enemies" }
             ]
         }
     },
@@ -1377,9 +1387,9 @@ function updateBuffsPanel() {
     // Kinetic Reserve stacks indicator (additive multiplier — see attack())
     if (effects.kineticReserve && p.kineticStacks > 0) {
         const stackDiv = document.createElement('div');
-        const mult = 1 + 0.6 * p.kineticStacks;
+        const mult = 1 + CONFIG.combat.kineticPerStack * p.kineticStacks;
         stackDiv.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,128,0,0.15); border-left: 3px solid #ff8000; font-family: 'VT323', monospace; color: #ff8000;";
-        stackDiv.innerHTML = `âš¡ Kinetic Reserve: ${p.kineticStacks}/4 stacks (x${mult.toFixed(1)} next hit)`;
+        stackDiv.innerHTML = `âš¡ Kinetic Reserve: ${p.kineticStacks}/${CONFIG.combat.kineticStackMax} stacks (x${mult.toFixed(1)} next hit)`;
         panel.appendChild(stackDiv);
     }
 
@@ -1387,7 +1397,7 @@ function updateBuffsPanel() {
     if (effects.bulwark && p.bulwarkStacks > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(78,205,196,0.1); border-left: 3px solid var(--accent-secondary); font-family: 'VT323', monospace; color: var(--accent-secondary);";
-        div.innerHTML = `ðŸ›¡ Bulwark: ${p.bulwarkStacks}/5 stacks (+${p.bulwarkStacks * 20}% damage, +${p.bulwarkStacks * 5}% DEF)`;
+        div.innerHTML = `ðŸ›¡ Bulwark: ${p.bulwarkStacks}/${CONFIG.combat.bulwarkStackMax} stacks (+${(p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100).toFixed(0)}% damage, +${(p.bulwarkStacks * CONFIG.combat.bulwarkDefPerStack * 100).toFixed(0)}% DEF)`;
         panel.appendChild(div);
     }
 
@@ -2742,18 +2752,16 @@ function drawGame() {
                 ctx.fillStyle = "#5a2a0e";
                 ctx.fillRect(ex + 8, ey, 3, 5);
                 ctx.fillRect(ex + 21, ey, 3, 5);
-                // Telegraph: red directional arrow during windup
+                // Telegraph: pulsing red warning ring during windup (no committed direction —
+                // the dash axis is recomputed at dash time so an arrow would be a lie).
                 if (enemy.chargeWindup > 0) {
-                    ctx.fillStyle = "#ff3030";
-                    const dx = enemy.chargeDx || 0, dy = enemy.chargeDy || 0;
-                    for (let i = 1; i <= 3; i++) {
-                        const tx = (enemy.x + dx * i) * TILESIZE;
-                        const ty = (enemy.y + dy * i) * TILESIZE;
-                        if (tx < 0 || tx >= GRIDSIZE * TILESIZE || ty < 0 || ty >= GRIDSIZE * TILESIZE) break;
-                        ctx.globalAlpha = 0.4;
-                        ctx.fillRect(tx + 12, ty + 12, 8, 8);
-                    }
+                    const pulse = 0.4 + 0.4 * Math.sin(Date.now() / 120);
+                    ctx.globalAlpha = pulse;
+                    ctx.strokeStyle = "#ff3030";
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(ex + 1, ey + 1, TILESIZE - 2, TILESIZE - 2);
                     ctx.globalAlpha = 1;
+                    ctx.lineWidth = 1;
                 }
             } else if (enemy.kind === "ranger") {
                 // Bow arch above head
@@ -2958,9 +2966,9 @@ function movePlayer(dx, dy) {
         });
     }
 
-    // Kinetic Reserve â€” stack on movement (max 4)
+    // Kinetic Reserve â€” stack on movement (cap per CONFIG.combat.kineticStackMax)
     if (gameState.player.passiveEffects.kineticReserve) {
-        if (gameState.player.kineticStacks < 4) {
+        if (gameState.player.kineticStacks < CONFIG.combat.kineticStackMax) {
             gameState.player.kineticStacks++;
             updateBuffsPanel();
         }
@@ -3207,10 +3215,10 @@ function attack() {
             // (crit multiplier change handled below in crit section)
             let lethalPrecisionNonCritApplied = false;
 
-            // Bulwark â€” bonus damage from standing still stacks
+            // Bulwark â€” bonus damage from standing still stacks (see CONFIG.combat)
             if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
-                damage = Math.floor(damage * (1 + p.bulwarkStacks * 0.20));
-                addLog(`Bulwark! +${p.bulwarkStacks * 20}% damage (${p.bulwarkStacks} stacks)`, "log-damage");
+                damage = Math.floor(damage * (1 + p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack));
+                addLog(`Bulwark! +${p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100}% damage (${p.bulwarkStacks} stacks)`, "log-damage");
             }
 
             // Weakpoint Specialist â€” bonus damage to bosses
@@ -3245,11 +3253,9 @@ function attack() {
                 damage = Math.floor(damage * (1 + p.berserkersFuryStacks * 0.03));
             }
 
-            // Kinetic Reserve — additive damage from movement stacks.
-            // Was 2^stacks (16x at 4 stacks — dominant strategy). Now +60% per stack
-            // (max 3.4x at 4 stacks). Still very strong, no longer the only build.
+            // Kinetic Reserve — additive damage from movement stacks (see CONFIG.combat).
             if (p.passiveEffects.kineticReserve && p.kineticStacks > 0) {
-                const kineticMult = 1 + 0.6 * p.kineticStacks;
+                const kineticMult = 1 + CONFIG.combat.kineticPerStack * p.kineticStacks;
                 damage = Math.floor(damage * kineticMult);
                 addLog(`Kinetic Reserve x${kineticMult.toFixed(1)}! (${p.kineticStacks} stacks)`, "log-damage");
                 p.kineticStacks = 0;
@@ -3401,23 +3407,8 @@ function attack() {
                 p.phantomAssaultMoves = 0;
             }
 
-            // Soulrend â€” ignore % of enemy DEF
-            let effectiveDef = enemy.def;
-            // Ironclad modifier â€” enemies have +50% DEF per stack
-            const ironcladStacks = countEnemyModifier(enemy, "ironclad");
-            if (ironcladStacks > 0) {
-                effectiveDef = Math.floor(effectiveDef * Math.pow(1.5, ironcladStacks));
-            }
-            if (enemy.shatterpointDuration && enemy.shatterpointDuration > 0) {
-                effectiveDef = Math.floor(effectiveDef * (1 - enemy.shatterpointReduction / 100));
-            }
-            if (p.passiveEffects.soulrend) {
-                effectiveDef = Math.floor(effectiveDef * (1 - p.passiveEffects.soulrend / 100));
-            }
-            // Assassin's Creed mastery (ATK+CRIT+LUCK) â€” crits ignore 100% enemy DEF
-            if (hasMastery("assassinsCreed") && didCrit) {
-                effectiveDef = 0;
-            }
+            // Effective enemy DEF (Ironclad / Shatterpoint / Soulrend / Assassin's Creed).
+            const effectiveDef = getEffectiveEnemyDef(enemy, { didCrit });
 
             // Goldblood â€” luck boosts damage
             if (p.passiveEffects.goldblood) {
@@ -3630,7 +3621,7 @@ function attack() {
     if (attacked) {
         p.kineticStacks = 0;
         // Bulwark â€” increment stacks when attacking (standing still)
-        if (p.passiveEffects.bulwark && p.bulwarkStacks < 5) {
+        if (p.passiveEffects.bulwark && p.bulwarkStacks < CONFIG.combat.bulwarkStackMax) {
             p.bulwarkStacks++;
         }
         // Convergence â€” increment stacks when not moving (max 5)
@@ -3755,7 +3746,9 @@ function specialAttack() {
                 enemy.bleedDmg = Math.floor(enemy.maxHp * CONFIG.combat.bleedFraction);
             }
 
-            damage = Math.max(1, damage - enemy.def);
+            // AOE now respects Ironclad / Shatterpoint / Soulrend (parity with melee).
+            // didCrit:false → AOE can't trigger Assassin's Creed (intentional; AC is a melee-crit identity).
+            damage = Math.max(1, damage - getEffectiveEnemyDef(enemy, { didCrit: false }));
             enemy.hp -= damage;
             if (enemy.hp <= 0) {
                 p.xp += Math.floor(enemy.xp * (1 + getPrestigeLevel('experienced') * 0.10));
@@ -4646,10 +4639,34 @@ function getEffectivePlayerDef() {
     if (hasMastery("warlord") && p.passiveEffects.warlordDefBonus) {
         def += p.passiveEffects.warlordDefBonus;
     }
-    // Bulwark — stationary stacks now grant DEF in addition to damage (build-variety pass).
-    // Damage portion is still applied in attack(); see line ~3211.
+    // Bulwark — stationary stacks grant DEF in addition to damage (CONFIG.combat).
+    // Damage portion is applied in attack().
     if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
-        def = Math.floor(def * (1 + p.bulwarkStacks * 0.05));
+        def = Math.floor(def * (1 + p.bulwarkStacks * CONFIG.combat.bulwarkDefPerStack));
+    }
+    return def;
+}
+
+// Deterministic effective enemy DEF for a player attack.
+// Shared by attack() and specialAttack() — previously specialAttack used raw enemy.def
+// and silently undersold against Ironclad/Shatterpoint/Soulrend.
+// opts.didCrit enables Assassin's Creed (ATK+CRIT+LUCK mastery) DEF bypass.
+function getEffectiveEnemyDef(enemy, opts) {
+    opts = opts || {};
+    const p = gameState.player;
+    let def = enemy.def;
+    const ironcladStacks = countEnemyModifier(enemy, "ironclad");
+    if (ironcladStacks > 0) {
+        def = Math.floor(def * Math.pow(1.5, ironcladStacks));
+    }
+    if (enemy.shatterpointDuration && enemy.shatterpointDuration > 0) {
+        def = Math.floor(def * (1 - enemy.shatterpointReduction / 100));
+    }
+    if (p.passiveEffects.soulrend) {
+        def = Math.floor(def * (1 - p.passiveEffects.soulrend / 100));
+    }
+    if (opts.didCrit && hasMastery("assassinsCreed")) {
+        def = 0;
     }
     return def;
 }
@@ -4758,6 +4775,15 @@ function gameOver() {
     if (gameState.floor > ls.highestFloor) ls.highestFloor = gameState.floor;
     if (gameState.player.level > ls.highestLevel) ls.highestLevel = gameState.player.level;
     if (earnedFragments > ls.bestRunFragments) ls.bestRunFragments = earnedFragments;
+
+    // Per-class telemetry — runsByClass counted on startGame; record floor reached on death.
+    const cls = gameState.selectedClass;
+    if (cls && ls.floorsByClass && cls in ls.floorsByClass) {
+        ls.floorsByClass[cls] += gameState.floor;
+        if (gameState.floor > (ls.highestFloorByClass[cls] || 0)) {
+            ls.highestFloorByClass[cls] = gameState.floor;
+        }
+    }
 
     // Update best run
     if (gameState.floor > prestigeData.bestRun.floor) {
@@ -4904,6 +4930,10 @@ function startGame() {
     // Apply class kit: starting Affinity + starter item.
     // Default to Brawler if no class was selected (e.g. legacy entry points).
     const cls = CLASSES[gameState.selectedClass] || CLASSES.brawler;
+    // Telemetry — record class pick.
+    if (prestigeData && prestigeData.lifetimeStats.runsByClass && cls.id in prestigeData.lifetimeStats.runsByClass) {
+        prestigeData.lifetimeStats.runsByClass[cls.id]++;
+    }
     Object.entries(cls.startingAffinity).forEach(([stat, val]) => {
         gameState.player.affinities[stat] = (gameState.player.affinities[stat] || 0) + val;
     });
