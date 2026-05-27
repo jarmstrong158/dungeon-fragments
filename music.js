@@ -1,20 +1,20 @@
 ﻿// Procedural 16-bit lofi music engine. Extracted from monolithic HTML.
-// Exposes MusicEngine â€” game.js consumes MusicEngine.init() / start() / setMuted().
+// Exposes MusicEngine — game.js consumes MusicEngine.init() / start() / setMuted().
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // PROCEDURAL 16-BIT LOFI MUSIC ENGINE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
-// Multi-track music system â€” 3 distinct lofi tracks that crossfade
+// Multi-track music system — 3 distinct lofi tracks that crossfade
 const TRACKS = [
     {
         name: "Chill Dungeon",
         bpm: 75,
         beatsPerChord: 2,
         progressions: [
-            [[60,64,67,71], [57,60,64,67], [62,65,69,72], [55,59,62,65]], // Cmaj7â†’Am7â†’Dm7â†’G7
-            [[65,69,72,76], [64,67,71,74], [57,60,64,67], [62,65,69,72]], // Fmaj7â†’Em7â†’Am7â†’Dm7
-            [[62,65,69,72], [55,59,62,65], [60,64,67,71], [65,69,72,76]], // Dm7â†’G7â†’Cmaj7â†’Fmaj7
+            [[60,64,67,71], [57,60,64,67], [62,65,69,72], [55,59,62,65]], // Cmaj7→Am7→Dm7→G7
+            [[65,69,72,76], [64,67,71,74], [57,60,64,67], [62,65,69,72]], // Fmaj7→Em7→Am7→Dm7
+            [[62,65,69,72], [55,59,62,65], [60,64,67,71], [65,69,72,76]], // Dm7→G7→Cmaj7→Fmaj7
         ],
         scale: [60,62,64,67,69, 72,74,76,79,81], // C pentatonic
         chordWave: 'square', melodyWave: 'square', bassWave: 'triangle',
@@ -29,9 +29,9 @@ const TRACKS = [
         bpm: 65,
         beatsPerChord: 2,
         progressions: [
-            [[62,65,69,72], [55,58,62,65], [58,62,65,69], [57,60,64,67]], // Dm7â†’Gm7â†’Bbmaj7â†’Am7
-            [[62,66,69,72], [58,62,65,69], [55,58,62,66], [57,60,64,67]], // Dm9â†’Bbmaj7â†’Gm9â†’Am7
-            [[57,60,64,67], [62,65,69,72], [58,62,65,69], [55,59,62,65]], // Am7â†’Dm7â†’Bbmaj7â†’G7
+            [[62,65,69,72], [55,58,62,65], [58,62,65,69], [57,60,64,67]], // Dm7→Gm7→Bbmaj7→Am7
+            [[62,66,69,72], [58,62,65,69], [55,58,62,66], [57,60,64,67]], // Dm9→Bbmaj7→Gm9→Am7
+            [[57,60,64,67], [62,65,69,72], [58,62,65,69], [55,59,62,65]], // Am7→Dm7→Bbmaj7→G7
         ],
         scale: [62,65,67,69,72, 74,77,79,81,84], // D minor pentatonic (2 octaves)
         chordWave: 'sawtooth', melodyWave: 'triangle', bassWave: 'triangle',
@@ -46,9 +46,9 @@ const TRACKS = [
         bpm: 85,
         beatsPerChord: 2,
         progressions: [
-            [[57,60,64,67], [65,69,72,76], [60,64,67,71], [64,67,71,74]], // Am7â†’Fmaj7â†’Cmaj7â†’Em7
-            [[57,60,64,67], [62,65,69,72], [65,69,72,76], [60,64,67,71]], // Am7â†’Dm7â†’Fmaj7â†’Cmaj7
-            [[64,67,71,74], [57,60,64,67], [62,65,69,72], [55,59,62,65]], // Em7â†’Am7â†’Dm7â†’G7
+            [[57,60,64,67], [65,69,72,76], [60,64,67,71], [64,67,71,74]], // Am7→Fmaj7→Cmaj7→Em7
+            [[57,60,64,67], [62,65,69,72], [65,69,72,76], [60,64,67,71]], // Am7→Dm7→Fmaj7→Cmaj7
+            [[64,67,71,74], [57,60,64,67], [62,65,69,72], [55,59,62,65]], // Em7→Am7→Dm7→G7
         ],
         scale: [57,60,62,64,67, 69,72,74,76,79], // A minor pentatonic (2 octaves)
         chordWave: 'square', melodyWave: 'square', bassWave: 'triangle',
@@ -72,7 +72,7 @@ const MusicEngine = {
         isPlaying: false,
         schedulerInterval: null,
         nextEighthTime: 0,
-        currentEighth: 0,       // 0-31 (4 chords Ã— 4 beats Ã— 2 eighths)
+        currentEighth: 0,       // 0-31 (4 chords × 4 beats × 2 eighths)
         currentProgression: 0,
         loopCount: 0,
         lastMelodyNote: 67,
@@ -120,7 +120,7 @@ const MusicEngine = {
         this.masterGain = this.audioCtx.createGain();
         this.masterGain.gain.value = this.volume;
 
-        // Connect: filter â†’ master â†’ output
+        // Connect: filter → master → output
         this.lofiFilter.connect(this.masterGain);
         this.masterGain.connect(this.audioCtx.destination);
 
@@ -133,12 +133,12 @@ const MusicEngine = {
             this.layerGains[name] = g;
         });
 
-        // 16-bit drum processing chain: drums â†’ bitcrush â†’ resonance â†’ lofiFilter
+        // 16-bit drum processing chain: drums → bitcrush → resonance → lofiFilter
         // Reconnect drums through the crush chain instead of straight to lofiFilter
         this.layerGains.drums.disconnect();
         this.layerGains.drums.gain.value = 1.3; // slight volume boost
 
-        // Bitcrusher waveshaper â€” quantizes signal to stepped levels like 16-bit samples
+        // Bitcrusher waveshaper — quantizes signal to stepped levels like 16-bit samples
         const crushCurve = new Float32Array(1024);
         const steps = 32; // quantization steps (lower = crunchier)
         for (let i = 0; i < 1024; i++) {
@@ -156,7 +156,7 @@ const MusicEngine = {
         this.drumResonance.Q.value = 1.5;
         this.drumResonance.gain.value = 3; // subtle 3dB boost at 4kHz
 
-        // Chain: drums layer â†’ bitcrush â†’ resonance â†’ lofi filter
+        // Chain: drums layer → bitcrush → resonance → lofi filter
         this.layerGains.drums.connect(this.drumCrush);
         this.drumCrush.connect(this.drumResonance);
         this.drumResonance.connect(this.lofiFilter);
@@ -220,7 +220,7 @@ const MusicEngine = {
         }
         const btn = document.getElementById('music-toggle');
         if (btn) {
-            btn.textContent = this.isMuted ? 'â™ª OFF' : 'â™ª ON';
+            btn.textContent = this.isMuted ? '♪ OFF' : '♪ ON';
             btn.classList.toggle('muted', this.isMuted);
         }
     },
@@ -240,7 +240,7 @@ const MusicEngine = {
             const prog = track.progressions[this.state.currentProgression];
             const chord = prog[chordIdx];
 
-            // === CHORDS (pad) â€” play on first eighth of each chord ===
+            // === CHORDS (pad) — play on first eighth of each chord ===
             if (beatInChord === 0) {
                 this._scheduleChord(time, chord, eighthDuration * totalEighths);
             }
@@ -446,7 +446,7 @@ const MusicEngine = {
         osc.stop(time + 0.15);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
 
-        // Sharp click transient â€” classic SNES-style attack
+        // Sharp click transient — classic SNES-style attack
         const click = this.audioCtx.createOscillator();
         const clickGain = this.audioCtx.createGain();
         click.type = 'square';
@@ -480,7 +480,7 @@ const MusicEngine = {
         noise.stop(time + 0.13);
         noise.onended = () => { noise.disconnect(); noiseFilter.disconnect(); noiseGain.disconnect(); };
 
-        // Square wave body â€” pitched snap like SNES percussion
+        // Square wave body — pitched snap like SNES percussion
         const osc = this.audioCtx.createOscillator();
         const oscGain = this.audioCtx.createGain();
         osc.type = 'square';
@@ -516,7 +516,7 @@ const MusicEngine = {
     },
 
     _scheduleHiHatOpen(time) {
-        // Open hi-hat: longer, brighter, slightly louder â€” gives the swing feel
+        // Open hi-hat: longer, brighter, slightly louder — gives the swing feel
         const noise = this.audioCtx.createBufferSource();
         const gain = this.audioCtx.createGain();
         const filter = this.audioCtx.createBiquadFilter();
@@ -584,7 +584,7 @@ const MusicEngine = {
     },
 
     _scheduleDrone(time, note, duration) {
-        // Sub-bass drone â€” very low sine wave with slow pulse for Deep Cavern track
+        // Sub-bass drone — very low sine wave with slow pulse for Deep Cavern track
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
 
@@ -605,7 +605,7 @@ const MusicEngine = {
     },
 
     _scheduleSidestick(time) {
-        // Short pitched click â€” like a rim shot / sidestick for Battle Groove
+        // Short pitched click — like a rim shot / sidestick for Battle Groove
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
 

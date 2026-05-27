@@ -1,4 +1,4 @@
-﻿// Dungeon Fragments â€” main game logic.
+﻿// Dungeon Fragments — main game logic.
 // Depends on music.js (MusicEngine global).
 
 // Game configuration
@@ -194,9 +194,9 @@ let gameState = {
     }
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // PRESTIGE / META-PROGRESSION SYSTEM
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 const PRESTIGE_UPGRADES = {
     // Iron Foundation
@@ -227,27 +227,27 @@ const PRESTIGE_UPGRADES = {
 };
 
 const PRESTIGE_ECHOES = {
-    // Tier 1 â€” Early milestones (first few runs)
+    // Tier 1 — Early milestones (first few runs)
     endurance:    { name: "Echo: Endurance",    desc: "+5 Max HP permanently",                          condition: "Reach floor 15",              check: (d) => d.lifetimeStats.highestFloor >= 15 },
     slayer:       { name: "Echo: Slayer",       desc: "+2 ATK permanently",                             condition: "100 lifetime kills",          check: (d) => d.lifetimeStats.totalKills >= 100 },
     bossHunter:   { name: "Echo: Boss Hunter",  desc: "+1 DEF permanently",                             condition: "10 lifetime boss kills",      check: (d) => d.lifetimeStats.totalBossKills >= 10 },
     collector:    { name: "Echo: Collector",    desc: "+3 Luck permanently",                            condition: "5 lifetime legendary+ items", check: (d) => d.lifetimeStats.totalLegendaryItems + d.lifetimeStats.totalMythicItems + d.lifetimeStats.totalAscendedItems >= 5 },
-    // Tier 2 â€” Mid milestones (dedicated runs)
+    // Tier 2 — Mid milestones (dedicated runs)
     delver:       { name: "Echo: Delver",       desc: "+1 stat point per level-up (6 instead of 5)",    condition: "Reach floor 30",              check: (d) => d.lifetimeStats.highestFloor >= 30 },
     ascendant:    { name: "Echo: Ascendant",    desc: "Ascended items unlock at 70 Luck instead of 80", condition: "Reach floor 50",             check: (d) => d.lifetimeStats.highestFloor >= 50 },
     veteran:      { name: "Echo: Veteran",      desc: "+1 SPD permanently",                             condition: "Complete 5 runs",             check: (d) => d.totalRuns >= 5 },
     hoarder:      { name: "Echo: Hoarder",      desc: "+2 starting potions permanently",                condition: "Collect 50 lifetime items",   check: (d) => d.lifetimeStats.totalItemsCollected >= 50 },
-    // Tier 3 â€” Hard milestones (require good builds)
+    // Tier 3 — Hard milestones (require good builds)
     deepDiver:    { name: "Echo: Deep Diver",   desc: "+3 ATK and +3 DEF permanently",                  condition: "Reach floor 100",             check: (d) => d.lifetimeStats.highestFloor >= 100 },
     massacre:     { name: "Echo: Massacre",      desc: "+2 Crit permanently",                            condition: "500 lifetime kills",          check: (d) => d.lifetimeStats.totalKills >= 500 },
     mythicHunter: { name: "Echo: Mythic Hunter", desc: "+5 Luck permanently",                           condition: "Find 3 mythic+ items total",  check: (d) => d.lifetimeStats.totalMythicItems + d.lifetimeStats.totalAscendedItems >= 3 },
     persistent:   { name: "Echo: Persistent",   desc: "+10 Max HP and +5 Max MP permanently",           condition: "Complete 15 runs",            check: (d) => d.totalRuns >= 15 },
-    // Tier 4 â€” Very hard milestones (optimized play)
+    // Tier 4 — Very hard milestones (optimized play)
     abyssWalker:  { name: "Echo: Abyss Walker", desc: "+5 ATK and +2 SPD permanently",                  condition: "Reach floor 200",             check: (d) => d.lifetimeStats.highestFloor >= 200 },
     warlord:      { name: "Echo: Warlord",      desc: "+3 Crit and +3 DEF permanently",                 condition: "Kill 25 rare bosses total",   check: (d) => d.lifetimeStats.totalRareBossKills >= 25 },
     relicMaster:  { name: "Echo: Relic Master",  desc: "Start with +5 to all stats permanently",        condition: "Find 10 ascended items total", check: (d) => d.lifetimeStats.totalAscendedItems >= 10 },
     grinder:      { name: "Echo: Grinder",       desc: "+2 to all stats permanently",                   condition: "Complete 30 runs",            check: (d) => d.totalRuns >= 30 },
-    // Tier 5 â€” Elite milestones (true dedication)
+    // Tier 5 — Elite milestones (true dedication)
     voidConqueror:{ name: "Echo: Void Conqueror", desc: "+8 ATK and +5 Crit permanently",               condition: "Reach floor 350",             check: (d) => d.lifetimeStats.highestFloor >= 350 },
     legendSlayer: { name: "Echo: Legend Slayer",  desc: "+5 to all stats permanently",                   condition: "2000 lifetime kills",         check: (d) => d.lifetimeStats.totalKills >= 2000 },
     trueCollector:{ name: "Echo: True Collector", desc: "Start with +10 Luck permanently",              condition: "25 ascended items total",     check: (d) => d.lifetimeStats.totalAscendedItems >= 25 },
@@ -484,7 +484,7 @@ const PASSIVEEFFECTS = [
     { name: "Arcane", desc: "MP cost reduction", stat: "arcane", range: [10, 40], affinity: null }
 ];
 
-// Dual Skill Passives â€” unlocked by reaching affinity thresholds in two stats
+// Dual Skill Passives — unlocked by reaching affinity thresholds in two stats
 // Player can have max 2 active dual passives at a time
 const DUAL_PASSIVES = [
     { name: "Unyielding Force", stat: "unyieldingForce", affinities: ["ATK", "DEF"], threshold: 5,
@@ -509,7 +509,7 @@ const DUAL_PASSIVES = [
       desc: "Crit kills have 5-15% chance to drop TWO items. Lethal Focus kills guarantee double drop." }
 ];
 
-// Mastery passives â€” require affinity level 8+ in 2-3 stats, only roll on Legendary+
+// Mastery passives — require affinity level 8+ in 2-3 stats, only roll on Legendary+
 const MASTERY_PASSIVES_DUAL = [
     { name: "War Machine", stat: "warMachine", affinities: ["ATK", "DEF"], threshold: 8, range: [1, 1],
       desc: "Damage adds 25% of total DEF. Attacks bypass Phase Shift dodge." },
@@ -558,7 +558,7 @@ const MASTERY_PASSIVES_TRI = [
 
 const ALL_MASTERY_PASSIVES = [...MASTERY_PASSIVES_DUAL, ...MASTERY_PASSIVES_TRI];
 
-// Legendary+ exclusive passives â€” only roll on Legendary, Mythic, Ascended
+// Legendary+ exclusive passives — only roll on Legendary, Mythic, Ascended
 const LEGENDARY_PASSIVES = [
     { name: "Soulrend", desc: "Attacks ignore % of enemy DEF", stat: "soulrend", range: [20, 50] },
     { name: "Undying", desc: "Survive lethal hit with 1 HP (cooldown)", stat: "undying", range: [1, 1] },
@@ -570,7 +570,7 @@ const LEGENDARY_PASSIVES = [
     { name: "Doom Aura", desc: "Enemies near you take scaling damage each turn", stat: "doomAura", range: [5, 20] }
 ];
 
-// Ascended Medallion buffs â€” earned by discarding 10 Ascended items
+// Ascended Medallion buffs — earned by discarding 10 Ascended items
 const MEDALLION_BUFFS = [
     { name: "Double Up", desc: "Equip additional Weapon, Cape, and Relic", stat: "doubleUp" },
     { name: "Lacerating Blows", desc: "All hits crit + bleed (1/5 maxHP/turn for 3 turns)", stat: "laceratingBlows" },
@@ -580,7 +580,7 @@ const MEDALLION_BUFFS = [
     { name: "Chrono Strike", desc: "Every 4th attack hits twice (2nd hit at 50% damage)", stat: "chronoStrike" }
 ];
 
-// Endgame enemy modifiers â€” rolled per floor starting at floor 35, every 5 floors
+// Endgame enemy modifiers — rolled per floor starting at floor 35, every 5 floors
 const ENEMY_MODIFIERS = [
     { name: "Ironclad", desc: "All enemies gain +50% DEF", stat: "ironclad", color: "#8899aa" },
     { name: "Frenzied", desc: "Enemies attack twice per turn", stat: "frenzied", color: "#ff4444" },
@@ -837,7 +837,7 @@ const CLASSES = {
     }
 };
 
-// Player debuffs â€” permanent per floor threshold, stacking
+// Player debuffs — permanent per floor threshold, stacking
 const PLAYER_DEBUFFS = [
     { floor: 35, name: "Corrosion", desc: "DEF reduced by 15%", stat: "corrosion", color: "#aa8844" },
     { floor: 40, name: "Fatigue", desc: "Potions heal 25% less", stat: "fatigue", color: "#886644" },
@@ -848,7 +848,7 @@ const PLAYER_DEBUFFS = [
     { floor: 65, name: "Death's Countdown", desc: "40-turn timer per floor", stat: "deathsCountdown", color: "#ff0000" }
 ];
 
-// Affinity milestone bonuses â€” innate bonuses at level 5 and 10
+// Affinity milestone bonuses — innate bonuses at level 5 and 10
 const AFFINITY_MILESTONES = {
     ATK:  { 5: { type: "baseDamage", value: 0.05, desc: "+5% base damage" },
             10: { type: "baseDamage", value: 0.10, desc: "+10% base damage" } },
@@ -910,7 +910,7 @@ function rollPassiveForItemType(itemType, isLegendaryPlus = false) {
     // Legendary+ items can also roll from the exclusive pool
     if (isLegendaryPlus) {
         pool = pool.concat(LEGENDARY_PASSIVES);
-        // Mastery passives â€” only roll if player meets affinity requirements
+        // Mastery passives — only roll if player meets affinity requirements
         const aff = gameState.player.affinities;
         ALL_MASTERY_PASSIVES.forEach(m => {
             if (m.affinities.every(a => aff[a] >= m.threshold)) {
@@ -943,7 +943,7 @@ function rollPassiveForItemType(itemType, isLegendaryPlus = false) {
 }
 
 function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
-    // Potion drop (skip if minRarity is set â€” guaranteed gear drop)
+    // Potion drop (skip if minRarity is set — guaranteed gear drop)
     const potionDropRate = 0.15 + (getPrestigeLevel('scavenger') * 0.05);
     if (!minRarity && dropPotion && Math.random() < potionDropRate && !isBoss) {
         return {
@@ -963,7 +963,7 @@ function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
     const luckStat = gameState.player.luck || 0;
     const plundererLuck = gameState.player.plundererBonusLuck || 0;
     const totalLuck = luckPassive + luckStat + plundererLuck;
-    // Affinity milestone: LUCK â€” bonus rarity chance
+    // Affinity milestone: LUCK — bonus rarity chance
     const luckAffinityBonus = getAffinityBonus("rarityBonus");
     const luckBonus = Math.log(1 + totalLuck / 30) * 0.15 + luckAffinityBonus;
     const bossBonus = isBoss ? 0.15 : 0;
@@ -983,12 +983,12 @@ function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
         }
     }
 
-    // Lucky Ascension â€” chance to bump rarity up one tier (excludes mythic/ascended)
+    // Lucky Ascension — chance to bump rarity up one tier (excludes mythic/ascended)
     if (gameState.player.passiveEffects.luckyAscension && rarity !== RARITIES.MYTHIC && rarity !== RARITIES.ASCENDED) {
         if (Math.random() * 100 < gameState.player.passiveEffects.luckyAscension) {
             const next = nextRarity(rarity);
             // Don't promote into Mythic via this effect (Mythic is excluded above-as-guard,
-            // but we also need to skip the jump from Legendaryâ†’Mythic).
+            // but we also need to skip the jump from Legendary→Mythic).
             if (next && next !== RARITIES.MYTHIC && next !== RARITIES.ASCENDED) {
                 rarity = next;
                 addLog(`Lucky Ascension! Gear upgraded to ${rarity.name}!`, "log-loot");
@@ -996,7 +996,7 @@ function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
         }
     }
 
-    // Prestige: Rarity Boost â€” chance to upgrade Common/Uncommon one tier
+    // Prestige: Rarity Boost — chance to upgrade Common/Uncommon one tier
     const rarityBoostLevel = getPrestigeLevel('rarityBoost');
     if (rarityBoostLevel > 0 && (rarity === RARITIES.COMMON || rarity === RARITIES.UNCOMMON)) {
         if (Math.random() < rarityBoostLevel * 0.05) {
@@ -1088,7 +1088,7 @@ function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
         rarity === RARITIES.EPIC ? 1 :
         rarity === RARITIES.RARE ? 1 : 0;
 
-    // Providence mastery â€” +1 passive slot on drops
+    // Providence mastery — +1 passive slot on drops
     if (hasMastery("providence") && passiveCount > 0) {
         passiveCount += 1;
     }
@@ -1121,7 +1121,7 @@ function applyPassiveEffects() {
         });
     });
 
-    // Entropy debuff â€” reduce all passive effect values by 10% per stack
+    // Entropy debuff — reduce all passive effect values by 10% per stack
     const entropyStacks = countDebuff("entropy");
     if (entropyStacks > 0) {
         const entropyMult = Math.pow(0.9, entropyStacks);
@@ -1130,19 +1130,19 @@ function applyPassiveEffects() {
         });
     }
 
-    // Chemist â€” cap at 50% max
+    // Chemist — cap at 50% max
     if (p.passiveEffects.chemist && p.passiveEffects.chemist > 50) {
         p.passiveEffects.chemist = 50;
     }
 
-    // Speedster â€” 20% base speed bonus
+    // Speedster — 20% base speed bonus
     if (p.passiveEffects.speedster) {
         const spdBonus = Math.floor((p.spd || 0) * 0.2);
         if (!p.passiveEffects.speed) p.passiveEffects.speed = 0;
         p.passiveEffects.speed += spdBonus;
     }
 
-    // Momentum â€” also grants bonus speed (scales with momentum value, 1-5 range)
+    // Momentum — also grants bonus speed (scales with momentum value, 1-5 range)
     if (p.passiveEffects.momentum) {
         const spdBonus = Math.max(1, Math.min(5, Math.floor(p.passiveEffects.momentum / 5)));
         if (!p.passiveEffects.speed) p.passiveEffects.speed = 0;
@@ -1166,7 +1166,7 @@ function applyPassiveEffects() {
         });
     });
 
-    // Warlord â€” ATK/DEF gain +15% of avg of others, +1 SPD per 50 (ATK+DEF)
+    // Warlord — ATK/DEF gain +15% of avg of others, +1 SPD per 50 (ATK+DEF)
     if (hasMastery("warlord")) {
         let totalAtk = p.atk;
         let totalDef = p.def;
@@ -1321,7 +1321,7 @@ function swapDualPassive(newStat, oldStat) {
 
     const oldDp = p.dualPassives[idx];
     p.dualPassives[idx] = newDp;
-    addLog(`DUAL PASSIVE SWAPPED: ${oldDp.name} â†’ ${newDp.name}!`, "log-boss");
+    addLog(`DUAL PASSIVE SWAPPED: ${oldDp.name} → ${newDp.name}!`, "log-boss");
 
     // Check remaining
     const aff = p.affinities;
@@ -1353,7 +1353,7 @@ function hasMastery(stat) {
     return gameState.player.masteries.some(m => m.stat === stat);
 }
 
-// Buff display panel â€” shows all active passive effects and medallions
+// Buff display panel — shows all active passive effects and medallions
 function updateBuffsPanel() {
     const panel = document.getElementById('buffs-list');
     if (!panel) return;
@@ -1361,7 +1361,7 @@ function updateBuffsPanel() {
 
     const p = gameState.player;
 
-    // Build lookup from stat key â†’ name, desc, color
+    // Build lookup from stat key → name, desc, color
     const allPassives = [...PASSIVEEFFECTS, ...LEGENDARY_PASSIVES];
     const lookup = {};
     allPassives.forEach(eff => {
@@ -1410,7 +1410,7 @@ function updateBuffsPanel() {
             const div = document.createElement('div');
             div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(0,0,0,0.3); border-left: 3px solid ${color}; font-family: 'VT323', monospace;`;
             div.innerHTML = `<span style="color:${nameColor}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">${info.name}</span><br>` +
-                `<span style="color: #ccc;">${displayVal}</span> <span style="color: #888; font-size: 0.9em;">â€” ${info.desc}</span>`;
+                `<span style="color: #ccc;">${displayVal}</span> <span style="color: #888; font-size: 0.9em;">— ${info.desc}</span>`;
             panel.appendChild(div);
         });
     }
@@ -1420,7 +1420,7 @@ function updateBuffsPanel() {
         const stackDiv = document.createElement('div');
         const mult = 1 + CONFIG.combat.kineticPerStack * p.kineticStacks;
         stackDiv.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,128,0,0.15); border-left: 3px solid #ff8000; font-family: 'VT323', monospace; color: #ff8000;";
-        stackDiv.innerHTML = `âš¡ Kinetic Reserve: ${p.kineticStacks}/${CONFIG.combat.kineticStackMax} stacks (x${mult.toFixed(1)} next hit)`;
+        stackDiv.innerHTML = `⚡ Kinetic Reserve: ${p.kineticStacks}/${CONFIG.combat.kineticStackMax} stacks (x${mult.toFixed(1)} next hit)`;
         panel.appendChild(stackDiv);
     }
 
@@ -1444,7 +1444,7 @@ function updateBuffsPanel() {
         const div = document.createElement('div');
         const reduction = p.guardianShellStacks * effects.guardianShell;
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(78,205,196,0.1); border-left: 3px solid var(--accent-secondary); font-family: 'VT323', monospace; color: var(--accent-secondary);";
-        div.innerHTML = `ðŸ›¡ Guardian Shell: ${p.guardianShellStacks}/5 stacks (-${reduction}% damage taken)`;
+        div.innerHTML = `🛡 Guardian Shell: ${p.guardianShellStacks}/5 stacks (-${reduction}% damage taken)`;
         panel.appendChild(div);
     }
 
@@ -1452,7 +1452,7 @@ function updateBuffsPanel() {
     if (effects.tenacity && p.tenacityShield > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(78,205,196,0.1); border-left: 3px solid #44ccaa; font-family: 'VT323', monospace; color: #44ccaa;";
-        div.innerHTML = `ðŸ›¡ Tenacity Shield: ${p.tenacityShield} HP remaining`;
+        div.innerHTML = `🛡 Tenacity Shield: ${p.tenacityShield} HP remaining`;
         panel.appendChild(div);
     }
 
@@ -1464,7 +1464,7 @@ function updateBuffsPanel() {
         const charged = p.battleTempoCharged;
         const color = charged ? "#ffd93d" : "var(--accent-secondary)";
         div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,217,61,0.1); border-left: 3px solid ${color}; font-family: 'VT323', monospace; color: ${color};`;
-        div.innerHTML = charged ? `âš¡ Battle Tempo: CHARGED! +${effects.battleTempo}% next attack` : `âš¡ Battle Tempo: ${moves}/${threshold} safe moves`;
+        div.innerHTML = charged ? `⚡ Battle Tempo: CHARGED! +${effects.battleTempo}% next attack` : `⚡ Battle Tempo: ${moves}/${threshold} safe moves`;
         panel.appendChild(div);
     }
 
@@ -1475,7 +1475,7 @@ function updateBuffsPanel() {
         const div = document.createElement('div');
         const color = charged ? "#ff8000" : "#ff8800";
         div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,128,0,0.1); border-left: 3px solid ${color}; font-family: 'VT323', monospace; color: ${color};`;
-        div.innerHTML = charged ? `ðŸŽ¯ Lethal Focus: CHARGED! Next kill = Legendary+ drop` : `ðŸŽ¯ Lethal Focus: ${stacks}/3 consecutive crits`;
+        div.innerHTML = charged ? `🎯 Lethal Focus: CHARGED! Next kill = Legendary+ drop` : `🎯 Lethal Focus: ${stacks}/3 consecutive crits`;
         panel.appendChild(div);
     }
 
@@ -1483,7 +1483,7 @@ function updateBuffsPanel() {
     if (effects.adrenaline && p.adrenalineTurns > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,217,61,0.1); border-left: 3px solid #ffd93d; font-family: 'VT323', monospace; color: #ffd93d;";
-        div.innerHTML = `âš¡ Adrenaline: +${effects.adrenaline}% SPD (${p.adrenalineTurns} turns)`;
+        div.innerHTML = `⚡ Adrenaline: +${effects.adrenaline}% SPD (${p.adrenalineTurns} turns)`;
         panel.appendChild(div);
     }
 
@@ -1491,7 +1491,7 @@ function updateBuffsPanel() {
     if (effects.precision && p.precisionStacks > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,136,0,0.1); border-left: 3px solid #ff8800; font-family: 'VT323', monospace; color: #ff8800;";
-        div.innerHTML = `ðŸŽ¯ Precision: +${p.precisionStacks}% bonus crit chance`;
+        div.innerHTML = `🎯 Precision: +${p.precisionStacks}% bonus crit chance`;
         panel.appendChild(div);
     }
 
@@ -1528,7 +1528,7 @@ function updateBuffsPanel() {
             const c1 = affColors[dp.affinities[0]] || "#fff";
             const c2 = affColors[dp.affinities[1]] || "#fff";
             div.innerHTML = `<span style="color: #ff00ff; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">${dp.name}</span><br>` +
-                `<span style="color:${c1}">${dp.affinities[0]}</span>+<span style="color:${c2}">${dp.affinities[1]}</span> â€” <span style="color: #ccc; font-size: 0.9em;">${dp.desc}</span>`;
+                `<span style="color:${c1}">${dp.affinities[0]}</span>+<span style="color:${c2}">${dp.affinities[1]}</span> — <span style="color: #ccc; font-size: 0.9em;">${dp.desc}</span>`;
             panel.appendChild(div);
         });
 
@@ -1536,7 +1536,7 @@ function updateBuffsPanel() {
         if (hasDualPassive("unyieldingForce") && p.unyieldingForceStacks > 0) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,0,255,0.15); border-left: 3px solid #ff00ff; font-family: 'VT323', monospace; color: #ff6bff;";
-            div.innerHTML = `âš” Unyielding Force: ${p.unyieldingForceStacks}/3 stacks (+${30 * p.unyieldingForceStacks}% next attack)`;
+            div.innerHTML = `⚔ Unyielding Force: ${p.unyieldingForceStacks}/3 stacks (+${30 * p.unyieldingForceStacks}% next attack)`;
             panel.appendChild(div);
         }
 
@@ -1546,7 +1546,7 @@ function updateBuffsPanel() {
             const charged = p.blitzStrikeCharged;
             const color = charged ? "#ffd93d" : "#ff6bff";
             div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,0,255,0.15); border-left: 3px solid ${color}; font-family: 'VT323', monospace; color: ${color};`;
-            div.innerHTML = charged ? `âš¡ Blitz Strike: CHARGED! +100% damage + free move` : `âš¡ Blitz Strike: ${p.blitzStrikeMoves || 0}/4 moves`;
+            div.innerHTML = charged ? `⚡ Blitz Strike: CHARGED! +100% damage + free move` : `⚡ Blitz Strike: ${p.blitzStrikeMoves || 0}/4 moves`;
             panel.appendChild(div);
         }
 
@@ -1554,7 +1554,7 @@ function updateBuffsPanel() {
         if (hasDualPassive("evasiveBulwark") && p.evasiveBulwarkShield > 0) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,0,255,0.15); border-left: 3px solid #4ecdc4; font-family: 'VT323', monospace; color: #4ecdc4;";
-            div.innerHTML = `ðŸ›¡ Evasive Bulwark: ${p.evasiveBulwarkShield} HP shield (${p.evasiveBulwarkTurns} turns)`;
+            div.innerHTML = `🛡 Evasive Bulwark: ${p.evasiveBulwarkShield} HP shield (${p.evasiveBulwarkTurns} turns)`;
             panel.appendChild(div);
         }
 
@@ -1564,7 +1564,7 @@ function updateBuffsPanel() {
             const charged = p.phantomAssaultCharged;
             const color = charged ? "#ff8800" : "#ff6bff";
             div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,0,255,0.15); border-left: 3px solid ${color}; font-family: 'VT323', monospace; color: ${color};`;
-            div.innerHTML = charged ? `ðŸŽ¯ Phantom Assault: CHARGED! +30% crit chance` : `ðŸŽ¯ Phantom Assault: ${p.phantomAssaultMoves || 0}/2 moves`;
+            div.innerHTML = charged ? `🎯 Phantom Assault: CHARGED! +30% crit chance` : `🎯 Phantom Assault: ${p.phantomAssaultMoves || 0}/2 moves`;
             panel.appendChild(div);
         }
 
@@ -1572,7 +1572,7 @@ function updateBuffsPanel() {
         if (hasDualPassive("plunderer") && p.plundererBonusLuck > 0) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,0,255,0.15); border-left: 3px solid #2ecc71; font-family: 'VT323', monospace; color: #2ecc71;";
-            div.innerHTML = `ðŸ’° Plunderer: +${p.plundererBonusLuck} temp LUCK this floor`;
+            div.innerHTML = `💰 Plunderer: +${p.plundererBonusLuck} temp LUCK this floor`;
             panel.appendChild(div);
         }
 
@@ -1608,7 +1608,7 @@ function updateBuffsPanel() {
         if (hasMastery("berserkersFury") && p.berserkersFuryStacks > 0) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,170,0,0.15); border-left: 3px solid #ffaa00; font-family: 'VT323', monospace; color: #ff6b6b;";
-            div.innerHTML = `âš” Berserker's Fury: +${p.berserkersFuryStacks * 3}% ATK (${p.berserkersFuryStacks}/10 stacks)`;
+            div.innerHTML = `⚔ Berserker's Fury: +${p.berserkersFuryStacks * 3}% ATK (${p.berserkersFuryStacks}/10 stacks)`;
             panel.appendChild(div);
         }
 
@@ -1616,12 +1616,12 @@ function updateBuffsPanel() {
         if (hasMastery("stormDancer") && p.stormDancerCooldown > 0) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,170,0,0.15); border-left: 3px solid #ffaa00; font-family: 'VT323', monospace; color: #ffd93d;";
-            div.innerHTML = `âš¡ Storm Dancer: ${p.stormDancerCooldown} turn cooldown`;
+            div.innerHTML = `⚡ Storm Dancer: ${p.stormDancerCooldown} turn cooldown`;
             panel.appendChild(div);
         } else if (hasMastery("stormDancer") && p.stormDancerMoves >= 3) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,170,0,0.15); border-left: 3px solid #ffd93d; font-family: 'VT323', monospace; color: #ffd93d;";
-            div.innerHTML = `âš¡ Storm Dancer: CHARGED! Next attack will AOE!`;
+            div.innerHTML = `⚡ Storm Dancer: CHARGED! Next attack will AOE!`;
             panel.appendChild(div);
         }
 
@@ -1629,7 +1629,7 @@ function updateBuffsPanel() {
         if (hasMastery("mirage") && p.mirageCharged) {
             const div = document.createElement('div');
             div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,170,0,0.15); border-left: 3px solid #ffaa00; font-family: 'VT323', monospace; color: #44aaff;";
-            div.innerHTML = `ðŸŒ€ Mirage: Next crit deals +50% damage!`;
+            div.innerHTML = `🌀 Mirage: Next crit deals +50% damage!`;
             panel.appendChild(div);
         }
     }
@@ -1664,7 +1664,7 @@ function updateBuffsPanel() {
             if (d.stat === "deathsCountdown" && gameState.deathsCountdownTurns > 0) {
                 extra = ` (${gameState.deathsCountdownTurns} turns left)`;
             }
-            div.innerHTML = `<span style="color:${d.color}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">â˜  ${d.name}</span><br>` +
+            div.innerHTML = `<span style="color:${d.color}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">☠ ${d.name}</span><br>` +
                 `<span style="color: #cc8888; font-size: 0.9em;">${d.desc}${extra}</span>`;
             panel.appendChild(div);
         });
@@ -1680,7 +1680,7 @@ function updateBuffsPanel() {
         gameState.floorModifiers.forEach(m => {
             const div = document.createElement('div');
             div.style.cssText = `font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(255,100,0,0.06); border-left: 3px solid ${m.color}; font-family: 'VT323', monospace;`;
-            div.innerHTML = `<span style="color:${m.color}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">âš  ${m.name}</span><br>` +
+            div.innerHTML = `<span style="color:${m.color}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">⚠ ${m.name}</span><br>` +
                 `<span style="color: #ccaa88; font-size: 0.9em;">${m.desc}</span>`;
             panel.appendChild(div);
         });
@@ -1754,7 +1754,7 @@ function updateInventoryDisplay() {
     Object.entries(gameState.discardCounts).forEach(([rarity, count]) => {
         const rarityObj = RARITIES[rarity];
         const needed = rarity === "MYTHIC" ? 20 : 10;
-        const label = rarity === "ASCENDED" ? `${rarity}: ${count}/${needed} (â†’ Medallion)` : `${rarity}: ${count}/${needed}`;
+        const label = rarity === "ASCENDED" ? `${rarity}: ${count}/${needed} (→ Medallion)` : `${rarity}: ${count}/${needed}`;
         discardHTML += `<span style="color:${rarityObj.color}">${label}</span><br>`;
     });
     discardDiv.innerHTML = discardHTML;
@@ -1781,7 +1781,7 @@ function updateInventoryDisplay() {
     equipBestBtn.style.color = "#000";
     equipBestBtn.style.fontWeight = "bold";
     equipBestBtn.style.fontSize = "0.55em";
-    equipBestBtn.textContent = "âš” EQUIP BEST";
+    equipBestBtn.textContent = "⚔ EQUIP BEST";
     equipBestBtn.title = "Auto-equip items with highest ATK + DEF per slot";
     equipBestBtn.onclick = (e) => { e.stopPropagation(); equipBestItems(); };
     inv.appendChild(equipBestBtn);
@@ -1807,7 +1807,7 @@ function updateInventoryDisplay() {
     sortBtn.onclick = (e) => { e.stopPropagation(); sortInventory(); };
     actionsDiv.appendChild(sortBtn);
 
-    // Discard-all buttons per rarity (skip Ascended â€” can't discard)
+    // Discard-all buttons per rarity (skip Ascended — can't discard)
     const discardableRarities = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "ASCENDED"];
     discardableRarities.forEach(rKey => {
         const r = RARITIES[rKey];
@@ -1819,7 +1819,7 @@ function updateInventoryDisplay() {
         if (rKey === "COMMON" || rKey === "UNCOMMON" || rKey === "LEGENDARY") {
             btn.style.color = "#000";
         }
-        btn.textContent = "ðŸ—‘ " + rKey.slice(0, 3);
+        btn.textContent = "🗑 " + rKey.slice(0, 3);
         btn.title = `Discard all unequipped ${r.name} items`;
         btn.onclick = (e) => { e.stopPropagation(); discardAllOfRarity(rKey); };
         actionsDiv.appendChild(btn);
@@ -1932,7 +1932,7 @@ function discardItem(index) {
 
     gameState.player.inventory.splice(index, 1);
 
-    // Scrapper â€” 50% chance to give 2 towards discard progression instead of 1
+    // Scrapper — 50% chance to give 2 towards discard progression instead of 1
     let discardAmount = 1;
     if (gameState.player.passiveEffects.scrapper && Math.random() < 0.5) {
         discardAmount = 2;
@@ -1942,7 +1942,7 @@ function discardItem(index) {
 
     addLog(`Discarded ${item.name}`, "log-loot");
 
-    // Soul Forge â€” discarding grants +1 to a random base stat
+    // Soul Forge — discarding grants +1 to a random base stat
     if (hasMedallion("soulForge")) {
         const statOptions = ["atk", "def", "spd", "luck", "crit", "maxHp", "maxMp"];
         const chosen = statOptions[Math.floor(Math.random() * statOptions.length)];
@@ -1952,7 +1952,7 @@ function discardItem(index) {
         updateStats();
     }
 
-    // Ascended discards â†’ medallion (10 required)
+    // Ascended discards → medallion (10 required)
     if (rarityName === "ASCENDED") {
         if (gameState.discardCounts.ASCENDED >= 10) {
             gameState.discardCounts.ASCENDED -= 10;
@@ -2032,7 +2032,7 @@ function craftMedallion() {
     addLog(`${chosen.desc}`, "log-level");
     createParticles(p.x, p.y, "#00ffcc", 50);
 
-    // Double Up â€” add extra equipment slots
+    // Double Up — add extra equipment slots
     if (chosen.stat === "doubleUp") {
         if (!p.equipped.weapon2) p.equipped.weapon2 = null;
         if (!p.equipped.cape2) p.equipped.cape2 = null;
@@ -2086,7 +2086,7 @@ function discardAllOfRarity(rarityKey) {
 
     addLog(`Discarded ${discardedCount} ${rarityObj.name} items!`, "log-loot");
 
-    // Soul Forge â€” +1 random base stat per item discarded
+    // Soul Forge — +1 random base stat per item discarded
     if (hasMedallion("soulForge") && discardedCount > 0) {
         const statOptions = ["atk", "def", "spd", "luck", "crit", "maxHp", "maxMp"];
         let totalGains = {};
@@ -2103,7 +2103,7 @@ function discardAllOfRarity(rarityKey) {
         updateStats();
     }
 
-    // Ascended discards â†’ medallions
+    // Ascended discards → medallions
     if (rarityKey === "ASCENDED") {
         while (gameState.discardCounts.ASCENDED >= 10) {
             gameState.discardCounts.ASCENDED -= 10;
@@ -2235,7 +2235,7 @@ function updateStats() {
         totalAtk = Math.floor(totalAtk * (1 + p.passiveEffects.berserker / 100));
     }
 
-    // Goldblood â€” luck also boosts DEF
+    // Goldblood — luck also boosts DEF
     if (p.passiveEffects.goldblood) {
         const totalLuck = (p.luck || 0) + (p.passiveEffects.luck || 0);
         totalDef += Math.floor(totalLuck * p.passiveEffects.goldblood / 100);
@@ -2336,7 +2336,7 @@ function generateFloor() {
     // Floor resets for passives
     const p = gameState.player;
 
-    // Tenacity â€” convert leftover shield to bonus XP before resetting
+    // Tenacity — convert leftover shield to bonus XP before resetting
     if (p.passiveEffects.tenacity && p.tenacityShield > 0) {
         const bonusXp = Math.floor(p.tenacityShield * 2);
         p.xp += bonusXp;
@@ -2385,7 +2385,7 @@ function generateFloor() {
         p.chaosEngineLastBonus = 0;
     }
 
-    // Tenacity â€” grant shield at floor start based on base DEF (from level-ups)
+    // Tenacity — grant shield at floor start based on base DEF (from level-ups)
     if (p.passiveEffects.tenacity) {
         p.tenacityShield = Math.floor(p.def * p.passiveEffects.tenacity / 100);
         if (p.tenacityShield > 0) addLog(`Tenacity shield: ${p.tenacityShield} HP!`, "log-level");
@@ -2393,7 +2393,7 @@ function generateFloor() {
         p.tenacityShield = 0;
     }
 
-    // Regular enemies â€” scales fast to countRampThreshold, slower after to avoid grid saturation
+    // Regular enemies — scales fast to countRampThreshold, slower after to avoid grid saturation
     const f_ec = gameState.floor;
     const E = CONFIG.enemies;
     const enemyCount = E.baseCount + Math.floor(
@@ -2405,7 +2405,7 @@ function generateFloor() {
         gameState.enemies.push(createEnemy(false, false, kindId));
     }
 
-    // Bosses â€” logarithmic scaling, caps so bosses stay meaningful
+    // Bosses — logarithmic scaling, caps so bosses stay meaningful
     let bossCount = Math.random() < 0.5 ? 2 : 1;
     if (gameState.floor > E.bossMinFloorRamp) {
         bossCount += Math.min(E.bossMaxCount,
@@ -2430,7 +2430,7 @@ function generateFloor() {
         }
     }
 
-    // Elite enemies â€” separate stream past eliteMinFloor
+    // Elite enemies — separate stream past eliteMinFloor
     if (gameState.floor >= E.eliteMinFloor) {
         const eliteChance = Math.min(
             E.eliteBaseChance + (gameState.floor - E.eliteMinFloor) * E.eliteChancePerFloor,
@@ -2457,7 +2457,7 @@ function generateFloor() {
         }
     }
 
-    // Arcane Ward enemies â€” AOE-resistant, must be killed with melee (floor 25+)
+    // Arcane Ward enemies — AOE-resistant, must be killed with melee (floor 25+)
     if (gameState.floor >= 25) {
         const wardCount = 1 + Math.floor(Math.min(gameState.floor, 100) / 50); // 1-2 at F25-49, 2-3 at F50+
         for (let i = 0; i < wardCount; i++) {
@@ -2472,7 +2472,7 @@ function generateFloor() {
         addLog("Arcane Warded enemies lurk on this floor...", "log-boss");
     }
 
-    // Endgame floor modifiers â€” every 5 floors starting at 35, stack beyond 100
+    // Endgame floor modifiers — every 5 floors starting at 35, stack beyond 100
     gameState.floorModifiers = [];
     if (gameState.floor >= 35) {
         // Base modifiers: one per 5-floor threshold from 35-100 (capped at all 4 unique mods)
@@ -2492,12 +2492,12 @@ function generateFloor() {
         }
         if (gameState.floorModifiers.length > 0) {
             gameState.floorModifiers.forEach(m => {
-                addLog(`âš  Floor Modifier: ${m.name} â€” ${m.desc}`, "log-boss");
+                addLog(`⚠ Floor Modifier: ${m.name} — ${m.desc}`, "log-boss");
             });
         }
     }
 
-    // Player debuffs â€” permanent per floor threshold, stack beyond 100
+    // Player debuffs — permanent per floor threshold, stack beyond 100
     gameState.playerDebuffs = [];
     PLAYER_DEBUFFS.forEach(debuff => {
         if (gameState.floor >= debuff.floor) {
@@ -2519,7 +2519,7 @@ function generateFloor() {
         gameState.deathsCountdownTurns = 40;
     }
 
-    // Sacrifice altar â€” chance to appear beyond floor 60
+    // Sacrifice altar — chance to appear beyond floor 60
     gameState.sacrificeAltar = null;
     gameState.altarUsed = false;
     if (gameState.floor >= 60 && Math.random() < 0.3) {
@@ -2540,7 +2540,7 @@ function generateFloor() {
         y: Math.floor(Math.random() * (GRIDSIZE - 4)) + 2
     };
 
-    // Red warp exit â€” always spawns, different position from stairs
+    // Red warp exit — always spawns, different position from stairs
     let wx, wy;
     do {
         wx = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
@@ -2548,7 +2548,7 @@ function generateFloor() {
     } while (wx === gameState.stairs.x && wy === gameState.stairs.y);
     gameState.warpExit = { x: wx, y: wy };
 
-    // Blue warp exit â€” always spawns, different position from stairs and red portal
+    // Blue warp exit — always spawns, different position from stairs and red portal
     let bx, by;
     do {
         bx = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
@@ -2560,7 +2560,7 @@ function generateFloor() {
     // Reset undying on new floor
     gameState.player.undyingUsed = false;
 
-    // Treasure tiles â€” hidden loot tiles spawned by Treasure Sense mastery
+    // Treasure tiles — hidden loot tiles spawned by Treasure Sense mastery
     gameState.treasureTiles = [];
     if (hasMastery("treasureSense")) {
         const tileCount = 3 + Math.floor(Math.random() * 3); // 3-5 tiles
@@ -2620,13 +2620,13 @@ function updateFloorModifiersDisplay() {
     if (!el) return;
     const parts = [];
     gameState.floorModifiers.forEach(m => {
-        parts.push(`<span style="color:${m.color}">âš  ${m.name.toUpperCase()}</span>`);
+        parts.push(`<span style="color:${m.color}">⚠ ${m.name.toUpperCase()}</span>`);
     });
     gameState.playerDebuffs.forEach(d => {
-        parts.push(`<span style="color:${d.color}">â˜  ${d.name.toUpperCase()}</span>`);
+        parts.push(`<span style="color:${d.color}">☠ ${d.name.toUpperCase()}</span>`);
     });
     if (gameState.deathsCountdownTurns > 0 && hasDebuff("deathsCountdown")) {
-        parts.push(`<span style="color:#ff0000">â± ${gameState.deathsCountdownTurns} TURNS</span>`);
+        parts.push(`<span style="color:#ff0000">⏱ ${gameState.deathsCountdownTurns} TURNS</span>`);
     }
     el.innerHTML = parts.length > 0 ? parts.join(" | ") : "";
 }
@@ -2855,7 +2855,7 @@ function drawGame() {
         ctx.fillRect(ax + 12, ay + 22, 8, 2);
     }
 
-    // Treasure tiles (Treasure Sense mastery) â€” show shimmer if within detection range
+    // Treasure tiles (Treasure Sense mastery) — show shimmer if within detection range
     if (gameState.treasureTiles && gameState.treasureTiles.length > 0) {
         const p = gameState.player;
         const totalSpd = p.spd + (p.passiveEffects.speed || 0);
@@ -2926,11 +2926,11 @@ function movePlayer(dx, dy) {
 
     gameState.player.recentMoves = (gameState.player.recentMoves || 0) + 1;
 
-    // Convergence â€” moving resets stacks and Mana Burn
+    // Convergence — moving resets stacks and Mana Burn
     gameState.player.convergenceStacks = 0;
     gameState.player.manaBurnStacks = 0;
 
-    // Bulwark â€” moving resets stacks
+    // Bulwark — moving resets stacks
     if (gameState.player.passiveEffects.bulwark) {
         gameState.player.bulwarkStacks = 0;
     }
@@ -2939,12 +2939,12 @@ function movePlayer(dx, dy) {
         gameState.player.ironRootsStacks = 0;
     }
 
-    // Adrenaline â€” decrement timer on move
+    // Adrenaline — decrement timer on move
     if (gameState.player.adrenalineTurns > 0) {
         gameState.player.adrenalineTurns--;
     }
 
-    // Battle Tempo â€” track moves without taking damage
+    // Battle Tempo — track moves without taking damage
     if (gameState.player.passiveEffects.battleTempo) {
         gameState.player.battleTempoMoves = (gameState.player.battleTempoMoves || 0) + 1;
         // Threshold scales with SPD: base 5 tiles, reduced by 1 per 5 SPD (min 3)
@@ -2956,7 +2956,7 @@ function movePlayer(dx, dy) {
         }
     }
 
-    // Blitz Strike (ATK+SPD dual) â€” track moves without attacking
+    // Blitz Strike (ATK+SPD dual) — track moves without attacking
     if (hasDualPassive("blitzStrike")) {
         gameState.player.blitzStrikeMoves = (gameState.player.blitzStrikeMoves || 0) + 1;
         if (gameState.player.blitzStrikeMoves >= 4 && !gameState.player.blitzStrikeCharged) {
@@ -2966,7 +2966,7 @@ function movePlayer(dx, dy) {
         }
     }
 
-    // Phantom Assault (SPD+CRIT dual) â€” track consecutive moves for crit bonus
+    // Phantom Assault (SPD+CRIT dual) — track consecutive moves for crit bonus
     if (hasDualPassive("phantomAssault")) {
         gameState.player.phantomAssaultMoves = (gameState.player.phantomAssaultMoves || 0) + 1;
         if (gameState.player.phantomAssaultMoves >= 2 && !gameState.player.phantomAssaultCharged) {
@@ -2974,7 +2974,7 @@ function movePlayer(dx, dy) {
         }
     }
 
-    // Evasive Bulwark (DEF+SPD dual) â€” decrement shield duration
+    // Evasive Bulwark (DEF+SPD dual) — decrement shield duration
     if (hasDualPassive("evasiveBulwark") && gameState.player.evasiveBulwarkTurns > 0) {
         gameState.player.evasiveBulwarkTurns--;
         if (gameState.player.evasiveBulwarkTurns <= 0) {
@@ -2982,7 +2982,7 @@ function movePlayer(dx, dy) {
         }
     }
 
-    // Phantom Step â€” deal damage to adjacent enemies after moving
+    // Phantom Step — deal damage to adjacent enemies after moving
     if (gameState.player.passiveEffects.phantomStep) {
         let totalAtk = gameState.player.atk;
         Object.values(gameState.player.equipped).forEach(item => {
@@ -3009,7 +3009,7 @@ function movePlayer(dx, dy) {
         });
     }
 
-    // Kinetic Reserve â€” stack on movement (cap per CONFIG.combat.kineticStackMax)
+    // Kinetic Reserve — stack on movement (cap per CONFIG.combat.kineticStackMax)
     if (gameState.player.passiveEffects.kineticReserve) {
         if (gameState.player.kineticStacks < CONFIG.combat.kineticStackMax) {
             gameState.player.kineticStacks++;
@@ -3017,18 +3017,18 @@ function movePlayer(dx, dy) {
         }
     }
 
-    // Storm Dancer (ATK+SPD+CRIT tri) â€” track moves for AOE crit
+    // Storm Dancer (ATK+SPD+CRIT tri) — track moves for AOE crit
     if (hasMastery("stormDancer")) {
         gameState.player.stormDancerMoves = (gameState.player.stormDancerMoves || 0) + 1;
         if (gameState.player.stormDancerCooldown > 0) gameState.player.stormDancerCooldown--;
     }
 
-    // Living Fortress (DEF+SPD) â€” decay SPD bonus turns
+    // Living Fortress (DEF+SPD) — decay SPD bonus turns
     if (hasMastery("livingFortress") && gameState.player.livingFortressSpdTurns > 0) {
         gameState.player.livingFortressSpdTurns--;
     }
 
-    // Bastion (DEF+SPD+CRIT tri) â€” deal damage when moving through enemy tiles
+    // Bastion (DEF+SPD+CRIT tri) — deal damage when moving through enemy tiles
     if (hasMastery("bastion")) {
         let totalDef = gameState.player.def;
         Object.values(gameState.player.equipped).forEach(item => {
@@ -3062,7 +3062,7 @@ function movePlayer(dx, dy) {
         });
     }
 
-    // Treasure tile pickup (Treasure Sense mastery) â€” guaranteed Rare+ gear
+    // Treasure tile pickup (Treasure Sense mastery) — guaranteed Rare+ gear
     if (gameState.treasureTiles && gameState.treasureTiles.length > 0) {
         gameState.treasureTiles.forEach(t => {
             if (!t.collected && t.x === newX && t.y === newY) {
@@ -3102,7 +3102,7 @@ function movePlayer(dx, dy) {
         addLog("Descended to the next floor!", "log-level");
     }
 
-    // Red warp exit â€” skip 10 floors, flat stat boost
+    // Red warp exit — skip 10 floors, flat stat boost
     if (gameState.warpExit && newX === gameState.warpExit.x && newY === gameState.warpExit.y) {
         gameState.floor += 10;
         gameState.player.atk += 2;
@@ -3124,7 +3124,7 @@ function movePlayer(dx, dy) {
         showAffinityScreen();
     }
 
-    // Blue warp exit â€” skip 30 floors, bigger stat boost + 2 affinities
+    // Blue warp exit — skip 30 floors, bigger stat boost + 2 affinities
     if (gameState.blueWarpExit && newX === gameState.blueWarpExit.x && newY === gameState.blueWarpExit.y) {
         gameState.floor += 30;
         gameState.player.atk += 3;
@@ -3165,13 +3165,13 @@ function movePlayer(dx, dy) {
         );
     }
 
-    // Void Siphon â€” lose 1 MP per tile moved per stack
+    // Void Siphon — lose 1 MP per tile moved per stack
     const voidStacks = countDebuff("voidSiphon");
     if (voidStacks > 0) {
         gameState.player.mp = Math.max(0, gameState.player.mp - voidStacks);
     }
 
-    // Death's Countdown â€” decrement timer on move
+    // Death's Countdown — decrement timer on move
     if (hasDebuff("deathsCountdown") && gameState.deathsCountdownTurns > 0) {
         gameState.deathsCountdownTurns--;
         updateFloorModifiersDisplay();
@@ -3182,7 +3182,7 @@ function movePlayer(dx, dy) {
             return;
         }
         if (gameState.deathsCountdownTurns <= 10) {
-            addLog(`â± Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
+            addLog(`⏱ Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
         }
     }
 }
@@ -3197,13 +3197,13 @@ function attack() {
         if (dist <= 1) {
             attacked = true;
 
-            // Phase Shift â€” enemy has 20% dodge chance per stack (capped at 80%)
+            // Phase Shift — enemy has 20% dodge chance per stack (capped at 80%)
             // War Machine mastery bypasses Phase Shift
             const phaseStacks = countEnemyModifier(enemy, "phaseShift");
             if (phaseStacks > 0 && !hasMastery("warMachine")) {
                 const dodgeChance = Math.min(0.8, phaseStacks * 0.2);
                 if (Math.random() < dodgeChance) {
-                    addLog("Enemy Phase Shifted â€” attack missed!", "log-damage");
+                    addLog("Enemy Phase Shifted — attack missed!", "log-damage");
                     return;
                 }
             }
@@ -3217,7 +3217,7 @@ function attack() {
                 baseAtkVal = Math.floor(baseAtkVal * p.passiveEffects.overcharge / 100);
             }
 
-            // Berserker â€” low HP bonus + adjacent enemy bonus
+            // Berserker — low HP bonus + adjacent enemy bonus
             if (p.passiveEffects.berserker) {
                 if (p.hp <= p.maxHp * 0.3) {
                     damage = Math.floor(damage * (1 + p.passiveEffects.berserker / 100));
@@ -3233,7 +3233,7 @@ function attack() {
                 }
             }
 
-            // Overwhelm â€” first hit on a target deals bonus damage
+            // Overwhelm — first hit on a target deals bonus damage
             if (p.passiveEffects.overwhelm) {
                 if (!p.enemiesHitThisFight.includes(enemy)) {
                     damage = Math.floor(damage * (1 + p.passiveEffects.overwhelm / 100));
@@ -3242,19 +3242,19 @@ function attack() {
                 }
             }
 
-            // Executioner â€” bonus damage to low HP enemies
+            // Executioner — bonus damage to low HP enemies
             if (p.passiveEffects.executioner && enemy.hp < enemy.maxHp * 0.4) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.executioner / 100));
                 addLog(`Executioner! +${p.passiveEffects.executioner}% damage (enemy low HP)`, "log-damage");
             }
 
-            // Deathbringer mastery (ATK+DEF+CRIT) â€” 2x damage to enemies below 50% HP
+            // Deathbringer mastery (ATK+DEF+CRIT) — 2x damage to enemies below 50% HP
             if (hasMastery("deathbringer") && enemy.hp < enemy.maxHp * 0.5) {
                 damage = Math.floor(damage * 2);
                 addLog("Deathbringer! 2x damage (enemy below 50% HP)!", "log-boss");
             }
 
-            // Lethal Precision mastery (ATK+CRIT) â€” non-crits deal +15% bonus
+            // Lethal Precision mastery (ATK+CRIT) — non-crits deal +15% bonus
             // (crit multiplier change handled below in crit section)
             let lethalPrecisionNonCritApplied = false;
 
@@ -3270,19 +3270,19 @@ function attack() {
                 addLog(`Iron Roots! +${(p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack * 100).toFixed(0)}% damage (${p.ironRootsStacks} stacks)`, "log-damage");
             }
 
-            // Weakpoint Specialist â€” bonus damage to bosses
+            // Weakpoint Specialist — bonus damage to bosses
             if (p.passiveEffects.weakpointSpecialist && (enemy.isBoss || enemy.isRareBoss)) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.weakpointSpecialist / 100));
                 addLog(`Weakpoint! +${p.passiveEffects.weakpointSpecialist}% boss damage!`, "log-damage");
             }
 
-            // Momentum â€” SPD-based damage bonus
+            // Momentum — SPD-based damage bonus
             if (p.passiveEffects.momentum) {
                 const totalSpd = p.spd + (p.passiveEffects.speed || 0);
                 damage = Math.floor(damage * (1 + (totalSpd * p.passiveEffects.momentum) / 1000));
             }
 
-            // Battle Tempo â€” bonus damage after moving without taking damage
+            // Battle Tempo — bonus damage after moving without taking damage
             if (p.passiveEffects.battleTempo && p.battleTempoCharged) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.battleTempo / 100));
                 addLog(`Battle Tempo! +${p.passiveEffects.battleTempo}% damage!`, "log-damage");
@@ -3291,13 +3291,13 @@ function attack() {
                 updateBuffsPanel();
             }
 
-            // Speedster â€” 50% bonus damage from total speed
+            // Speedster — 50% bonus damage from total speed
             if (p.passiveEffects.speedster) {
                 const totalSpd = p.spd + (p.passiveEffects.speed || 0);
                 damage += Math.floor(totalSpd * 0.5);
             }
 
-            // Berserker's Fury mastery (ATK+SPD) â€” stacking ATK bonus from kills
+            // Berserker's Fury mastery (ATK+SPD) — stacking ATK bonus from kills
             if (hasMastery("berserkersFury") && p.berserkersFuryStacks > 0) {
                 damage = Math.floor(damage * (1 + p.berserkersFuryStacks * 0.03));
             }
@@ -3311,7 +3311,7 @@ function attack() {
                 updateBuffsPanel();
             }
 
-            // Unyielding Force (ATK+DEF dual) â€” bonus damage from damage-taken stacks
+            // Unyielding Force (ATK+DEF dual) — bonus damage from damage-taken stacks
             if (hasDualPassive("unyieldingForce") && p.unyieldingForceStacks > 0) {
                 const ufBonus = 30 * p.unyieldingForceStacks; // ~30% per stack, up to 3
                 damage = Math.floor(damage * (1 + ufBonus / 100));
@@ -3320,7 +3320,7 @@ function attack() {
                 updateBuffsPanel();
             }
 
-            // Blitz Strike (ATK+SPD dual) â€” bonus damage after 4 consecutive moves
+            // Blitz Strike (ATK+SPD dual) — bonus damage after 4 consecutive moves
             if (hasDualPassive("blitzStrike") && p.blitzStrikeCharged) {
                 const blitzBonus = 100; // 100% bonus damage
                 damage = Math.floor(damage * (1 + blitzBonus / 100));
@@ -3333,7 +3333,7 @@ function attack() {
                 addLog("Blitz Strike grants +1 free move!", "log-level");
             }
 
-            // Executioner's Mark (ATK+CRIT dual) â€” bonus damage to low HP enemies
+            // Executioner's Mark (ATK+CRIT dual) — bonus damage to low HP enemies
             if (hasDualPassive("executionersMark") && enemy.hp < enemy.maxHp * 0.3) {
                 const execBonus = 75; // 75% bonus damage to enemies below 30% HP
                 damage = Math.floor(damage * (1 + execBonus / 100));
@@ -3343,15 +3343,15 @@ function attack() {
             // --- Crit system with Precision, Deadeye, Shatterpoint + Masteries ---
             const hasLacerating = hasMedallion("laceratingBlows");
             let critChance = p.crit + (p.passiveEffects.crit || 0);
-            // Precision â€” stacking crit chance after non-crits
+            // Precision — stacking crit chance after non-crits
             if (p.passiveEffects.precision) {
                 critChance += p.precisionStacks;
             }
-            // Phantom Assault (SPD+CRIT dual) â€” bonus crit chance after moving 2+ tiles
+            // Phantom Assault (SPD+CRIT dual) — bonus crit chance after moving 2+ tiles
             if (hasDualPassive("phantomAssault") && p.phantomAssaultCharged) {
                 critChance += 30; // +30% crit chance
             }
-            // Flash Point mastery (SPD+CRIT) â€” first attack is guaranteed crit, every 3rd is guaranteed crit
+            // Flash Point mastery (SPD+CRIT) — first attack is guaranteed crit, every 3rd is guaranteed crit
             let flashPointForced = false;
             if (hasMastery("flashPoint")) {
                 if (p.flashPointFirstAttack) {
@@ -3363,15 +3363,15 @@ function attack() {
                     flashPointForced = true;
                 }
             }
-            // Assassin's Creed mastery (ATK+CRIT+LUCK) â€” doubled crit vs full HP enemies
+            // Assassin's Creed mastery (ATK+CRIT+LUCK) — doubled crit vs full HP enemies
             if (hasMastery("assassinsCreed") && enemy.hp >= enemy.maxHp) {
                 critChance *= 2;
             }
 
             const critEsc = getPrestigeLevel('criticalEscalation') * 0.03;
-            // Affinity milestone: CRIT â€” bonus crit damage multiplier
+            // Affinity milestone: CRIT — bonus crit damage multiplier
             const critAffinityBonus = getAffinityBonus("critDamage");
-            // Lethal Precision mastery (ATK+CRIT) â€” base crit is 3x instead of 2x
+            // Lethal Precision mastery (ATK+CRIT) — base crit is 3x instead of 2x
             const baseCritMult = (hasMastery("lethalPrecision") ? 3 : 2) + critAffinityBonus;
             let didCrit = false;
             if (hasLacerating) {
@@ -3390,28 +3390,28 @@ function attack() {
             } else if (Math.random() * 100 < critChance || flashPointForced) {
                 didCrit = true;
                 const critMult = baseCritMult + (p.passiveEffects.deadeye ? p.passiveEffects.deadeye / 100 : 0) + critEsc;
-                // Mirage mastery (SPD+CRIT+LUCK) â€” post-phase crit +50%
+                // Mirage mastery (SPD+CRIT+LUCK) — post-phase crit +50%
                 const mirageBonus = (hasMastery("mirage") && p.mirageCharged) ? 0.5 : 0;
                 if (mirageBonus > 0) p.mirageCharged = false;
                 damage = Math.floor(damage * (critMult + mirageBonus));
                 addLog(`CRITICAL HIT x${(critMult + mirageBonus).toFixed(1)}!`, "log-damage");
             }
 
-            // Lethal Precision â€” +15% on non-crits
+            // Lethal Precision — +15% on non-crits
             if (hasMastery("lethalPrecision") && !didCrit) {
                 damage = Math.floor(damage * 1.15);
                 lethalPrecisionNonCritApplied = true;
             }
 
-            // Gambler's Ruin mastery (ATK+SPD+LUCK) â€” 10% for 3x, 5% for 0
+            // Gambler's Ruin mastery (ATK+SPD+LUCK) — 10% for 3x, 5% for 0
             if (hasMastery("gamblersRuin")) {
                 const roll = Math.random();
                 if (roll < 0.05) {
                     damage = 0;
-                    addLog("Gambler's Ruin â€” whiffed! 0 damage!", "log-damage");
+                    addLog("Gambler's Ruin — whiffed! 0 damage!", "log-damage");
                 } else if (roll < 0.15) {
                     damage = Math.floor(damage * 3);
-                    addLog("Gambler's Ruin â€” JACKPOT! 3x damage!", "log-boss");
+                    addLog("Gambler's Ruin — JACKPOT! 3x damage!", "log-boss");
                 }
             }
 
@@ -3424,14 +3424,14 @@ function attack() {
                 }
             }
 
-            // Shatterpoint â€” crits reduce enemy DEF for 2 turns
+            // Shatterpoint — crits reduce enemy DEF for 2 turns
             if (didCrit && p.passiveEffects.shatterpoint) {
                 enemy.shatterpointDuration = 2;
                 enemy.shatterpointReduction = p.passiveEffects.shatterpoint;
                 addLog(`Shatterpoint! Enemy DEF reduced by ${p.passiveEffects.shatterpoint}%!`, "log-damage");
             }
 
-            // Lethal Focus â€” track consecutive crits
+            // Lethal Focus — track consecutive crits
             if (p.passiveEffects.lethalFocus) {
                 if (didCrit) {
                     p.lethalFocusStacks = (p.lethalFocusStacks || 0) + 1;
@@ -3446,7 +3446,7 @@ function attack() {
                 }
             }
 
-            // Phantom Assault (SPD+CRIT dual) â€” crit grants free move, then reset
+            // Phantom Assault (SPD+CRIT dual) — crit grants free move, then reset
             if (hasDualPassive("phantomAssault") && p.phantomAssaultCharged) {
                 if (didCrit) {
                     p.adrenalineSurgeMoves = (p.adrenalineSurgeMoves || 0) + 1;
@@ -3459,7 +3459,7 @@ function attack() {
             // Effective enemy DEF (Ironclad / Shatterpoint / Soulrend / Assassin's Creed).
             const effectiveDef = getEffectiveEnemyDef(enemy, { didCrit });
 
-            // Goldblood â€” luck boosts damage
+            // Goldblood — luck boosts damage
             if (p.passiveEffects.goldblood) {
                 const totalLuck = (p.luck || 0) + (p.passiveEffects.luck || 0);
                 damage += Math.floor(totalLuck * p.passiveEffects.goldblood / 100);
@@ -3478,7 +3478,7 @@ function attack() {
             createParticles(enemy.x, enemy.y, "#ff0000");
             addLog(`Hit ${enemy.isRareBoss ? "RARE BOSS" : enemy.isBoss ? "BOSS" : enemy.isElite ? "ELITE" : "enemy"} for ${damage} damage!`, "log-damage");
 
-            // Chrono Strike â€” every 4th attack hits twice at 50% damage
+            // Chrono Strike — every 4th attack hits twice at 50% damage
             if (hasMedallion("chronoStrike")) {
                 p.chronoCounter++;
                 if (p.chronoCounter >= 4) {
@@ -3497,19 +3497,19 @@ function attack() {
             }
 
             if (enemy.hp <= 0) {
-                // Siphon â€” kills restore MP (capped to prevent self-sustaining AOE)
+                // Siphon — kills restore MP (capped to prevent self-sustaining AOE)
                 if (p.passiveEffects.siphon) {
                     const mpRestore = Math.min(CONFIG.combat.siphonMaxPerKill, Math.floor(p.maxMp * p.passiveEffects.siphon / 100));
                     p.mp = Math.min(p.maxMp, p.mp + mpRestore);
                 }
 
-                // Adrenaline â€” SPD boost on kill for 3 turns
+                // Adrenaline — SPD boost on kill for 3 turns
                 if (p.passiveEffects.adrenaline) {
                     p.adrenalineTurns = 3;
                     addLog(`Adrenaline! +${p.passiveEffects.adrenaline}% SPD for 3 turns!`, "log-level");
                 }
 
-                // Adrenaline Surge â€” grant bonus free moves on kill
+                // Adrenaline Surge — grant bonus free moves on kill
                 if (p.passiveEffects.adrenalineSurge) {
                     const maxSurgeMoves = p.passiveEffects.adrenalineSurge;
                     if ((p.adrenalineSurgeMoves || 0) < maxSurgeMoves) {
@@ -3530,7 +3530,7 @@ function attack() {
                 const isElite = enemy.isElite;
                 let minRarity = enemy.isRareBoss ? RARITIES.RARE : isElite ? RARITIES.RARE : null;
 
-                // Lethal Focus â€” guaranteed Legendary+ drop on kill after 3 consecutive crits
+                // Lethal Focus — guaranteed Legendary+ drop on kill after 3 consecutive crits
                 if (p.lethalFocusCharged) {
                     minRarity = RARITIES.LEGENDARY;
                     p.lethalFocusCharged = false;
@@ -3539,23 +3539,23 @@ function attack() {
                     createParticles(enemy.x, enemy.y, "#ff8000", 20);
                 }
 
-                // Executioner's Mark (ATK+CRIT dual) â€” crit kills on low HP enemies always drop gear
+                // Executioner's Mark (ATK+CRIT dual) — crit kills on low HP enemies always drop gear
                 let execMarkGuaranteeGear = false;
                 if (hasDualPassive("executionersMark") && didCrit && enemy.hp <= 0) {
                     execMarkGuaranteeGear = true;
                 }
 
-                // Plunderer (ATK+LUCK dual) â€” overkill damage â†’ temporary LUCK
+                // Plunderer (ATK+LUCK dual) — overkill damage → temporary LUCK
                 if (hasDualPassive("plunderer") && enemy.hp < 0) {
                     const overkill = Math.abs(enemy.hp);
                     const bonusLuck = Math.floor(overkill / 100);
                     if (bonusLuck > 0) {
                         p.plundererBonusLuck = (p.plundererBonusLuck || 0) + bonusLuck;
-                        addLog(`Plunderer! Overkill â†’ +${bonusLuck} temp LUCK (total: ${p.plundererBonusLuck})!`, "log-level");
+                        addLog(`Plunderer! Overkill → +${bonusLuck} temp LUCK (total: ${p.plundererBonusLuck})!`, "log-level");
                     }
                 }
 
-                // Berserker's Fury mastery (ATK+SPD) â€” +3% ATK per kill (max +30%), kill grants free move
+                // Berserker's Fury mastery (ATK+SPD) — +3% ATK per kill (max +30%), kill grants free move
                 if (hasMastery("berserkersFury")) {
                     if (p.berserkersFuryStacks < 10) {
                         p.berserkersFuryStacks++;
@@ -3564,7 +3564,7 @@ function attack() {
                     p.adrenalineSurgeMoves = (p.adrenalineSurgeMoves || 0) + 1;
                 }
 
-                // Blood Tithe mastery (ATK+LUCK) â€” 25% potion on kill + overkill heals
+                // Blood Tithe mastery (ATK+LUCK) — 25% potion on kill + overkill heals
                 if (hasMastery("bloodTithe")) {
                     if (Math.random() < 0.25) {
                         addPotions(1);
@@ -3582,7 +3582,7 @@ function attack() {
                     }
                 }
 
-                // Deathbringer mastery (ATK+DEF+CRIT) â€” killing enemies with DEF > yours heals 25% max HP
+                // Deathbringer mastery (ATK+DEF+CRIT) — killing enemies with DEF > yours heals 25% max HP
                 if (hasMastery("deathbringer")) {
                     let playerTotalDef = p.def;
                     Object.values(p.equipped).forEach(item => { if (item) playerTotalDef += item.def || 0; });
@@ -3595,7 +3595,7 @@ function attack() {
                     }
                 }
 
-                // Jackpot (CRIT+LUCK dual) â€” crit kills have chance for double drops
+                // Jackpot (CRIT+LUCK dual) — crit kills have chance for double drops
                 let jackpotDoubled = false;
                 if (hasDualPassive("jackpot") && didCrit) {
                     const jackpotChance = p.lethalFocusCharged ? 100 : 10; // 10% base, 100% if Lethal Focus was active
@@ -3606,7 +3606,7 @@ function attack() {
                     }
                 }
 
-                // Pirate King mastery (ATK+DEF+LUCK) â€” guaranteed Rare+ on all drops, bosses always drop 2
+                // Pirate King mastery (ATK+DEF+LUCK) — guaranteed Rare+ on all drops, bosses always drop 2
                 if (hasMastery("pirateKing")) {
                     if (!minRarity || minRarity.statMult < RARITIES.RARE.statMult) {
                         minRarity = RARITIES.RARE;
@@ -3630,7 +3630,7 @@ function attack() {
                         loot = generateLoot(isBoss || isElite, true, minRarity);
                     }
 
-                    // Fortune's Edge mastery (CRIT+LUCK) â€” 30% chance to upgrade rarity on crit kills
+                    // Fortune's Edge mastery (CRIT+LUCK) — 30% chance to upgrade rarity on crit kills
                     if (hasMastery("fortunesEdge") && didCrit && loot.type !== "potion") {
                         if (Math.random() < 0.30) {
                             const newRarity = nextRarity(loot.rarity);
@@ -3669,7 +3669,7 @@ function attack() {
     p.recentMoves = 0;
     if (attacked) {
         p.kineticStacks = 0;
-        // Bulwark â€” increment stacks when attacking (standing still)
+        // Bulwark — increment stacks when attacking (standing still)
         if (p.passiveEffects.bulwark && p.bulwarkStacks < CONFIG.combat.bulwarkStackMax) {
             p.bulwarkStacks++;
         }
@@ -3677,19 +3677,19 @@ function attack() {
         if (p.passiveEffects.ironRoots && p.ironRootsStacks < CONFIG.combat.ironRootsStackMax) {
             p.ironRootsStacks++;
         }
-        // Convergence â€” increment stacks when not moving (max 5)
+        // Convergence — increment stacks when not moving (max 5)
         if (hasFloorModifier("convergence") && p.convergenceStacks < 5) {
             p.convergenceStacks++;
             if (p.convergenceStacks >= 3) {
-                addLog(`âš  Convergence x${p.convergenceStacks} â€” enemies deal +${p.convergenceStacks * 15}% damage!`, "log-damage");
+                addLog(`⚠ Convergence x${p.convergenceStacks} — enemies deal +${p.convergenceStacks * 15}% damage!`, "log-damage");
             }
         }
-        // Blitz Strike â€” reset move counter after attacking (unless it was just consumed)
+        // Blitz Strike — reset move counter after attacking (unless it was just consumed)
         if (hasDualPassive("blitzStrike") && !p.blitzStrikeCharged) {
             p.blitzStrikeMoves = 0;
         }
 
-        // Storm Dancer mastery (ATK+SPD+CRIT) â€” AOE crit after 3+ moves, 5-turn cooldown
+        // Storm Dancer mastery (ATK+SPD+CRIT) — AOE crit after 3+ moves, 5-turn cooldown
         if (hasMastery("stormDancer") && p.stormDancerMoves >= 3 && p.stormDancerCooldown <= 0) {
             let totalAtk = p.atk;
             Object.values(p.equipped).forEach(item => { if (item) totalAtk += item.atk || 0; });
@@ -3718,7 +3718,7 @@ function attack() {
             addLog("Storm Dancer! AOE crit blast!", "log-boss");
         }
 
-        // Gambler's Ruin mastery (ATK+SPD+LUCK) â€” free moves spawn gold tiles
+        // Gambler's Ruin mastery (ATK+SPD+LUCK) — free moves spawn gold tiles
         if (hasMastery("gamblersRuin") && p.adrenalineSurgeMoves > 0) {
             if (Math.random() < 0.3) {
                 p.goldTiles.push({ x: p.x, y: p.y });
@@ -3734,7 +3734,7 @@ function attack() {
         levelUp();
     }
 
-    // Death's Countdown â€” decrement on attack turn too
+    // Death's Countdown — decrement on attack turn too
     if (attacked && hasDebuff("deathsCountdown") && gameState.deathsCountdownTurns > 0) {
         gameState.deathsCountdownTurns--;
         updateFloorModifiersDisplay();
@@ -3745,7 +3745,7 @@ function attack() {
             return;
         }
         if (gameState.deathsCountdownTurns <= 10) {
-            addLog(`â± Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
+            addLog(`⏱ Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
         }
     }
 
@@ -3757,9 +3757,9 @@ function specialAttack() {
     let mpCost = C.aoeBaseCost;
     // Floor scaling
     mpCost += Math.floor(gameState.floor / C.aoeFloorCostPer);
-    // Psychic Flare â€” +cost but +1 range
+    // Psychic Flare — +cost but +1 range
     if (gameState.player.passiveEffects.psychicFlare) mpCost += C.psychicFlareExtraCost;
-    // Mana Burn â€” consecutive AOE casts without moving cost more
+    // Mana Burn — consecutive AOE casts without moving cost more
     mpCost += gameState.player.manaBurnStacks * C.manaBurnPerStack;
     const reduction = gameState.player.passiveEffects.arcane || 0;
     const actualCost = Math.floor(mpCost * (1 - reduction / 100));
@@ -3786,12 +3786,12 @@ function specialAttack() {
             // AOE multiplier
             damage = Math.floor(damage * C.aoeMultiplier);
 
-            // Arcane Ward â€” takes reduced damage from AOE
+            // Arcane Ward — takes reduced damage from AOE
             if (enemy.isArcaneWard) {
                 damage = Math.floor(damage * C.arcaneWardAoeReduction);
             }
 
-            // Lacerating Blows â€” auto crit + bleed on AOE too
+            // Lacerating Blows — auto crit + bleed on AOE too
             if (hasMedallion("laceratingBlows")) {
                 const critChance = p.crit + (p.passiveEffects.crit || 0);
                 damage *= (Math.random() * 100 < critChance) ? 3 : 2;
@@ -3838,11 +3838,11 @@ function specialAttack() {
     gameState.enemies = gameState.enemies.filter(e => e.hp > 0);
 
     p.kineticStacks = 0; // Reset kinetic stacks on attack
-    // Convergence â€” increment stacks when not moving (max 5)
+    // Convergence — increment stacks when not moving (max 5)
     if (hasFloorModifier("convergence") && p.convergenceStacks < 5) {
         p.convergenceStacks++;
         if (p.convergenceStacks >= 3) {
-            addLog(`âš  Convergence x${p.convergenceStacks} â€” enemies deal +${p.convergenceStacks * 15}% damage!`, "log-damage");
+            addLog(`⚠ Convergence x${p.convergenceStacks} — enemies deal +${p.convergenceStacks * 15}% damage!`, "log-damage");
         }
     }
     updateBuffsPanel();
@@ -3852,7 +3852,7 @@ function specialAttack() {
         levelUp();
     }
 
-    // Death's Countdown â€” decrement on special attack turn
+    // Death's Countdown — decrement on special attack turn
     if (hasDebuff("deathsCountdown") && gameState.deathsCountdownTurns > 0) {
         gameState.deathsCountdownTurns--;
         updateFloorModifiersDisplay();
@@ -3863,7 +3863,7 @@ function specialAttack() {
             return;
         }
         if (gameState.deathsCountdownTurns <= 10) {
-            addLog(`â± Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
+            addLog(`⏱ Death's Countdown: ${gameState.deathsCountdownTurns} turns remaining!`, "log-damage");
         }
     }
 
@@ -3880,7 +3880,7 @@ function usePotion() {
         return;
     }
 
-    // Chemist â€” chance to not consume potion
+    // Chemist — chance to not consume potion
     let consumed = true;
     if (gameState.player.passiveEffects.chemist) {
         if (Math.random() * 100 < gameState.player.passiveEffects.chemist) {
@@ -3890,18 +3890,18 @@ function usePotion() {
     }
     if (consumed) gameState.player.potions--;
 
-    // Prestige: Potion Mastery â€” potions heal more
+    // Prestige: Potion Mastery — potions heal more
     const potionMasteryMult = 1 + (getPrestigeLevel('potionMastery') * 0.10);
     let hpHeal = Math.floor(50 * potionMasteryMult);
     let mpHeal = Math.floor(25 * potionMasteryMult);
-    // Fatigue â€” potions heal 25% less per stack
+    // Fatigue — potions heal 25% less per stack
     const fatigueStacks = countDebuff("fatigue");
     if (fatigueStacks > 0) {
         const fatigueMult = Math.pow(0.75, fatigueStacks);
         hpHeal = Math.floor(hpHeal * fatigueMult);
         mpHeal = Math.floor(mpHeal * fatigueMult);
     }
-    // Cursed Blood â€” all healing reduced by 40% per stack
+    // Cursed Blood — all healing reduced by 40% per stack
     const cursedBloodPotionStacks = countDebuff("cursedBlood");
     if (cursedBloodPotionStacks > 0) {
         const cbMult = Math.pow(0.6, cursedBloodPotionStacks);
@@ -3968,7 +3968,7 @@ function showLevelUpScreen() {
 
         const minusBtn = document.createElement('button');
         minusBtn.className = "stat-alloc-btn";
-        minusBtn.textContent = "âˆ’";
+        minusBtn.textContent = "−";
         minusBtn.onclick = () => {
             if (gameState.tempAllocations[statKey] <= 0) return;
             gameState.tempAllocations[statKey]--;
@@ -4088,7 +4088,7 @@ function showAffinityScreen() {
 
         const minusBtn = document.createElement('button');
         minusBtn.className = "stat-alloc-btn";
-        minusBtn.textContent = "âˆ’";
+        minusBtn.textContent = "−";
         minusBtn.onclick = () => {
             if (gameState.tempAffinityAlloc[key] <= 0) return;
             gameState.tempAffinityAlloc[key]--;
@@ -4134,16 +4134,16 @@ function showAffinityScreen() {
             msRow.style.cssText = "width: 100%; font-size: 0.55em; margin-top: 1px; padding-left: 8px;";
             if (currentLv >= threshold) {
                 msRow.style.color = info.color;
-                msRow.innerHTML = `â˜… Lv ${threshold}: ${milestone.desc} <span style="color:#4ecdc4;">âœ“ ACTIVE</span>`;
+                msRow.innerHTML = `★ Lv ${threshold}: ${milestone.desc} <span style="color:#4ecdc4;">✓ ACTIVE</span>`;
             } else {
                 const needed = threshold - currentLv;
                 msRow.style.color = "#555";
-                msRow.innerHTML = `â˜† Lv ${threshold}: ${milestone.desc} <span style="color:#888;">(need +${needed})</span>`;
+                msRow.innerHTML = `☆ Lv ${threshold}: ${milestone.desc} <span style="color:#888;">(need +${needed})</span>`;
             }
             row.appendChild(msRow);
         });
 
-        // Dual passive hints â€” show what's available or close for this affinity
+        // Dual passive hints — show what's available or close for this affinity
         const relevantDuals = DUAL_PASSIVES.filter(dp => dp.affinities.includes(key));
         const p = gameState.player;
         relevantDuals.forEach(dp => {
@@ -4161,10 +4161,10 @@ function showAffinityScreen() {
             if (thisNeeds <= 2 || otherNeeds === 0) { // Show if close to unlocking
                 const dualRow = document.createElement('div');
                 dualRow.style.cssText = "width: 100%; font-size: 0.55em; color: #ff00ff; margin-top: 1px; padding-left: 8px; opacity: 0.8;";
-                let status = (thisNeeds === 0 && otherNeeds === 0) ? "âœ“ READY"
+                let status = (thisNeeds === 0 && otherNeeds === 0) ? "✓ READY"
                     : `Need ${thisNeeds > 0 ? key + ' +' + thisNeeds : ''} ${otherNeeds > 0 ? otherAff + ' +' + otherNeeds : ''}`;
-                if (atMax && thisNeeds === 0 && otherNeeds === 0) status = "âœ“ READY (swap)";
-                dualRow.innerHTML = `â†³ <span style="color:#ff00ff">${dp.name}</span> (${key}+${otherAff}) â€” ${status.trim()}`;
+                if (atMax && thisNeeds === 0 && otherNeeds === 0) status = "✓ READY (swap)";
+                dualRow.innerHTML = `↳ <span style="color:#ff00ff">${dp.name}</span> (${key}+${otherAff}) — ${status.trim()}`;
                 row.appendChild(dualRow);
             }
         });
@@ -4275,7 +4275,7 @@ function sacrificeItem(slot) {
         gainMessages.push(`+${val} ${displayNames[stat] || stat}`);
     });
 
-    // Destroy the item â€” remove from both equipped slot and inventory
+    // Destroy the item — remove from both equipped slot and inventory
     p.equipped[slot] = null;
     p.inventory = p.inventory.filter(i => i !== item);
     gameState.altarUsed = true;
@@ -4299,7 +4299,7 @@ function enemyTurn() {
     const p = gameState.player;
     let playerWasHit = false;
 
-    // Chaos Engine mastery (DEF+CRIT+LUCK) â€” random stat +10% each turn
+    // Chaos Engine mastery (DEF+CRIT+LUCK) — random stat +10% each turn
     if (hasMastery("chaosEngine")) {
         const stats = ["atk", "def", "spd", "crit", "luck"];
         const chosen = stats[Math.floor(Math.random() * stats.length)];
@@ -4316,12 +4316,12 @@ function enemyTurn() {
     function processEnemyAttack(enemy) {
         let incoming = enemy.atk;
 
-        // Convergence â€” enemies gain +15% ATK per stack (from standing still)
+        // Convergence — enemies gain +15% ATK per stack (from standing still)
         if (hasFloorModifier("convergence") && p.convergenceStacks > 0) {
             incoming = Math.floor(incoming * (1 + p.convergenceStacks * 0.15));
         }
 
-        // Mirage mastery (SPD+CRIT+LUCK) â€” 15% chance attacks phase through
+        // Mirage mastery (SPD+CRIT+LUCK) — 15% chance attacks phase through
         if (hasMastery("mirage")) {
             if (Math.random() < 0.15) {
                 addLog("Mirage! Attack phased through you!", "log-level");
@@ -4336,7 +4336,7 @@ function enemyTurn() {
             const dodgeChance = (totalSpd * p.passiveEffects.evasion) / 100;
             if (Math.random() * 100 < dodgeChance) {
                 addLog("You DODGED the attack!", "log-damage");
-                // Evasive Bulwark (DEF+SPD dual) â€” gain shield on dodge
+                // Evasive Bulwark (DEF+SPD dual) — gain shield on dodge
                 if (hasDualPassive("evasiveBulwark")) {
                     const shieldAmount = Math.floor(p.maxHp * 0.15); // 15% max HP
                     p.evasiveBulwarkShield = (p.evasiveBulwarkShield || 0) + shieldAmount;
@@ -4344,7 +4344,7 @@ function enemyTurn() {
                     addLog(`Evasive Bulwark! +${shieldAmount} shield from dodge!`, "log-level");
                     updateBuffsPanel();
                 }
-                // Lucky Star mastery (DEF+SPD+LUCK) â€” 30% chance to spawn potion on dodge
+                // Lucky Star mastery (DEF+SPD+LUCK) — 30% chance to spawn potion on dodge
                 if (hasMastery("luckyStar") && Math.random() < 0.30) {
                     addPotions(1);
                     addLog("Lucky Star! Dodge spawns a potion!", "log-loot");
@@ -4356,12 +4356,12 @@ function enemyTurn() {
         // Calculate effective DEF (shared with forecastDamage)
         let effectivePlayerDef = getEffectivePlayerDef();
 
-        // Chaos Engine mastery (DEF+CRIT+LUCK) â€” block check (DEF > incoming)
+        // Chaos Engine mastery (DEF+CRIT+LUCK) — block check (DEF > incoming)
         const chaosBlocked = hasMastery("chaosEngine") && effectivePlayerDef >= incoming;
 
         incoming = Math.max(0, incoming - effectivePlayerDef);
 
-        // Providence mastery (DEF+LUCK) â€” 20% chance incoming damage is halved
+        // Providence mastery (DEF+LUCK) — 20% chance incoming damage is halved
         if (incoming > 0 && hasMastery("providence")) {
             if (Math.random() < 0.20) {
                 incoming = Math.floor(incoming / 2);
@@ -4369,21 +4369,21 @@ function enemyTurn() {
             }
         }
 
-        // Living Fortress mastery (DEF+SPD) â€” attacks dealing <10% max HP deal 0
+        // Living Fortress mastery (DEF+SPD) — attacks dealing <10% max HP deal 0
         if (incoming > 0 && hasMastery("livingFortress") && incoming < p.maxHp * 0.10) {
             incoming = 0;
             p.livingFortressSpdTurns = 2;
             addLog("Living Fortress! Trivial damage negated! +2 SPD!", "log-level");
         }
 
-        // Guardian Shell â€” stacking damage reduction
+        // Guardian Shell — stacking damage reduction
         if (incoming > 0 && p.passiveEffects.guardianShell && p.guardianShellStacks > 0) {
             const reduction = p.guardianShellStacks * p.passiveEffects.guardianShell;
             incoming = Math.floor(incoming * (1 - reduction / 100));
             incoming = Math.max(0, incoming);
         }
 
-        // Ironheart â€” flat damage reduction based on base DEF from level-ups
+        // Ironheart — flat damage reduction based on base DEF from level-ups
         // Each point of base DEF grants ironheart% damage reduction, capped at 50%
         if (incoming > 0 && p.passiveEffects.ironheart) {
             const ironheartReduction = Math.min(50, p.def * p.passiveEffects.ironheart / 100);
@@ -4391,7 +4391,7 @@ function enemyTurn() {
             incoming = Math.max(0, incoming);
         }
 
-        // Tenacity shield â€” absorb damage before HP
+        // Tenacity shield — absorb damage before HP
         if (incoming > 0 && p.tenacityShield > 0) {
             const absorbed = Math.min(incoming, p.tenacityShield);
             p.tenacityShield -= absorbed;
@@ -4399,7 +4399,7 @@ function enemyTurn() {
             if (absorbed > 0) addLog(`Tenacity shield absorbed ${absorbed} damage! (${p.tenacityShield} remaining)`, "log-level");
         }
 
-        // Evasive Bulwark (DEF+SPD dual) shield â€” absorb damage before HP
+        // Evasive Bulwark (DEF+SPD dual) shield — absorb damage before HP
         if (incoming > 0 && p.evasiveBulwarkShield > 0) {
             const absorbed = Math.min(incoming, p.evasiveBulwarkShield);
             p.evasiveBulwarkShield -= absorbed;
@@ -4407,7 +4407,7 @@ function enemyTurn() {
             if (absorbed > 0) addLog(`Evasive Bulwark shield absorbed ${absorbed} damage! (${p.evasiveBulwarkShield} remaining)`, "log-level");
         }
 
-        // Thorned Armor (DEF+CRIT dual) â€” reflect damage back to attacker
+        // Thorned Armor (DEF+CRIT dual) — reflect damage back to attacker
         if (incoming > 0 && hasDualPassive("thornedArmor")) {
             let reflectDmg = Math.floor(incoming * 0.20); // 20% reflect
             // Reflected damage can crit
@@ -4424,7 +4424,7 @@ function enemyTurn() {
             }
         }
 
-        // Iron Retaliation mastery (DEF+CRIT) â€” counterattack for 100% DEF, can crit
+        // Iron Retaliation mastery (DEF+CRIT) — counterattack for 100% DEF, can crit
         if (hasMastery("ironRetaliation")) {
             let counterDmg = effectivePlayerDef;
             const critChance = p.crit + (p.passiveEffects.crit || 0);
@@ -4437,7 +4437,7 @@ function enemyTurn() {
             enemy.hp -= counterDmg;
         }
 
-        // Chaos Engine mastery (DEF+CRIT+LUCK) â€” block counterattack + stun
+        // Chaos Engine mastery (DEF+CRIT+LUCK) — block counterattack + stun
         if (chaosBlocked && hasMastery("chaosEngine")) {
             const counterDmg = Math.floor(effectivePlayerDef * 0.5);
             enemy.hp -= counterDmg;
@@ -4446,7 +4446,7 @@ function enemyTurn() {
         }
 
         if (incoming > 0) {
-            // Unyielding Force (ATK+DEF dual) â€” stack damage taken for next attack bonus
+            // Unyielding Force (ATK+DEF dual) — stack damage taken for next attack bonus
             if (hasDualPassive("unyieldingForce") && p.unyieldingForceStacks < 3) {
                 p.unyieldingForceStacks++;
             }
@@ -4455,25 +4455,25 @@ function enemyTurn() {
             playerWasHit = true;
             addLog(`You took ${incoming} damage!`, "log-damage");
 
-            // Guardian Shell â€” gain stacks on taking damage
+            // Guardian Shell — gain stacks on taking damage
             if (p.passiveEffects.guardianShell && p.guardianShellStacks < 5) {
                 p.guardianShellStacks++;
             }
 
-            // Vampiric Horde â€” enemy heals 10% of damage dealt per stack
+            // Vampiric Horde — enemy heals 10% of damage dealt per stack
             const vampStacks = countEnemyModifier(enemy, "vampiricHorde");
             if (vampStacks > 0) {
                 const healAmt = Math.floor(incoming * 0.1 * vampStacks);
                 enemy.hp = Math.min(enemy.maxHp, enemy.hp + healAmt);
             }
 
-            // Undying â€” survive lethal hit once
+            // Undying — survive lethal hit once
             if (p.hp <= 0 && p.passiveEffects.undying && !p.undyingUsed) {
                 p.hp = 1;
                 p.undyingUsed = true;
                 addLog("UNDYING triggers! You survive with 1 HP!", "log-level");
                 createParticles(p.x, p.y, "#00ffcc", 30);
-            // Fortune's Guard (DEF+LUCK dual) â€” chance to survive lethal at 1 HP + free potion
+            // Fortune's Guard (DEF+LUCK dual) — chance to survive lethal at 1 HP + free potion
             } else if (p.hp <= 0 && hasDualPassive("fortunesGuard") && !p.fortunesGuardUsed) {
                 const fgChance = 15; // 15% chance
                 if (Math.random() * 100 < fgChance) {
@@ -4485,7 +4485,7 @@ function enemyTurn() {
                 } else if (p.hp <= 0) {
                     p.hp = 0;
                 }
-            // Lucky Star mastery (DEF+SPD+LUCK) â€” lethal teleport (once per floor)
+            // Lucky Star mastery (DEF+SPD+LUCK) — lethal teleport (once per floor)
             } else if (p.hp <= 0 && hasMastery("luckyStar") && !p.luckyStarUsed) {
                 p.hp = 1;
                 p.luckyStarUsed = true;
@@ -4543,7 +4543,7 @@ function enemyTurn() {
     if (playerWasHit) {
         p.turnsSinceHit = 0;
         p.recentMoves = 0;
-        // Battle Tempo â€” reset on taking damage
+        // Battle Tempo — reset on taking damage
         if (p.passiveEffects.battleTempo) {
             p.battleTempoMoves = 0;
             p.battleTempoCharged = false;
@@ -4552,7 +4552,7 @@ function enemyTurn() {
         p.turnsSinceHit = (p.turnsSinceHit || 0) + 1;
     }
 
-    // Bleed tick â€” Lacerating Blows medallion
+    // Bleed tick — Lacerating Blows medallion
     gameState.enemies.forEach(enemy => {
         if (enemy.bleedDuration && enemy.bleedDuration > 0) {
             enemy.hp -= enemy.bleedDmg;
@@ -4573,14 +4573,14 @@ function enemyTurn() {
         return true;
     });
 
-    // Shatterpoint â€” tick down duration on enemies
+    // Shatterpoint — tick down duration on enemies
     gameState.enemies.forEach(enemy => {
         if (enemy.shatterpointDuration && enemy.shatterpointDuration > 0) {
             enemy.shatterpointDuration--;
         }
     });
 
-    // Doom Aura â€” damage nearby enemies each turn, scales with floor
+    // Doom Aura — damage nearby enemies each turn, scales with floor
     if (p.passiveEffects.doomAura) {
         gameState.enemies.forEach(enemy => {
             const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
@@ -4589,7 +4589,7 @@ function enemyTurn() {
                 const auraDmg = Math.floor(p.passiveEffects.doomAura * floorScale);
                 enemy.hp -= auraDmg;
                 if (enemy.hp <= 0) {
-                    // Don't fully handle death here â€” just mark for cleanup
+                    // Don't fully handle death here — just mark for cleanup
                 }
             }
         });
@@ -4616,7 +4616,7 @@ function enemyTurn() {
 // Deterministic baseline attack power.
 // Shared by updateStats() (display), attack() (per-hit), specialAttack() (AOE).
 // Excludes context-specific modifiers (crit, berserker adjacency, executioner low-HP,
-// overwhelm first-hit, AOE x1.5, ArcaneWard x0.25) â€” callers add those on top.
+// overwhelm first-hit, AOE x1.5, ArcaneWard x0.25) — callers add those on top.
 //
 // opts.aoe=true preserves the historical AOE damage formula, which only applies
 // equipment + overcharge + affinity + withering (no stat-scaling passives,
@@ -4667,7 +4667,7 @@ function getBaseAttackPower(opts) {
     return damage;
 }
 
-// Deterministic effective player DEF â€” used by both processEnemyAttack and forecastDamage.
+// Deterministic effective player DEF — used by both processEnemyAttack and forecastDamage.
 // Excludes RNG-based effects (Providence, Mirage, Evasion, etc.).
 function getEffectivePlayerDef() {
     const p = gameState.player;
@@ -4740,7 +4740,7 @@ function forecastDamage() {
     gameState.enemies.forEach(enemy => {
         const dist = Math.abs(enemy.x - p.x) + Math.abs(enemy.y - p.y);
         if (dist <= 1) {
-            // Adjacent â€” will attack next turn
+            // Adjacent — will attack next turn
             let raw = enemy.atk;
             if (hasFloorModifier("convergence") && p.convergenceStacks > 0) {
                 raw = Math.floor(raw * (1 + p.convergenceStacks * 0.15));
@@ -4759,7 +4759,7 @@ function forecastDamage() {
             totalIncoming += raw;
             threatCount++;
         } else if (dist <= 2) {
-            // Closing in â€” will be adjacent next turn
+            // Closing in — will be adjacent next turn
             closingCount++;
         }
     });
@@ -4769,12 +4769,12 @@ function forecastDamage() {
 
     if (threatCount > 0) {
         const warnColor = incomingAfterShields >= p.hp ? "log-damage" : "log-loot";
-        const deathWarn = incomingAfterShields >= p.hp ? " âš  LETHAL!" : "";
+        const deathWarn = incomingAfterShields >= p.hp ? " ⚠ LETHAL!" : "";
         const shieldNote = totalShield > 0 ? ` (shield: ${totalShield})` : "";
-        addLog(`âš” ${threatCount} enemy${threatCount > 1 ? "ies" : ""} adjacent! ~${incomingAfterShields} incoming damage${shieldNote} (HP: ${p.hp})${deathWarn}`, warnColor);
+        addLog(`⚔ ${threatCount} enemy${threatCount > 1 ? "ies" : ""} adjacent! ~${incomingAfterShields} incoming damage${shieldNote} (HP: ${p.hp})${deathWarn}`, warnColor);
     }
     if (closingCount > 0) {
-        addLog(`â†’ ${closingCount} enemy${closingCount > 1 ? "ies" : ""} closing in next turn`, "log-boss");
+        addLog(`→ ${closingCount} enemy${closingCount > 1 ? "ies" : ""} closing in next turn`, "log-boss");
     }
 }
 
@@ -4815,7 +4815,7 @@ function gameOver() {
         bestItemContainer.appendChild(div);
     }
 
-    // Prestige system â€” calculate fragments and update lifetime stats
+    // Prestige system — calculate fragments and update lifetime stats
     const earnedFragments = calculateFragments();
     prestigeData.fragments += earnedFragments;
     prestigeData.totalFragmentsEarned += earnedFragments;
@@ -4881,7 +4881,7 @@ function applyPrestigeBonuses() {
     const p = gameState.player;
     const u = prestigeData.upgrades;
 
-    // Iron Foundation â€” starting stat bonuses
+    // Iron Foundation — starting stat bonuses
     p.maxHp += u.hardenedBody * 10;
     p.hp = p.maxHp;
     p.atk += u.sharpenedEdge * 2;
@@ -4891,34 +4891,34 @@ function applyPrestigeBonuses() {
     p.maxMp += u.manaWell * 10;
     p.mp = p.maxMp;
 
-    // Fortune's Favor â€” starting stat bonuses
+    // Fortune's Favor — starting stat bonuses
     p.luck += u.luckyStars * 3;
     p.crit += u.keenEye * 1;
 
-    // Arcane Secrets â€” Head Start (higher starting floor)
+    // Arcane Secrets — Head Start (higher starting floor)
     if (u.headStart > 0) {
         gameState.floor = 1 + u.headStart;
     }
 
-    // Echo bonuses â€” Tier 1
+    // Echo bonuses — Tier 1
     if (prestigeData.echoes.endurance) p.maxHp += 5;
     if (prestigeData.echoes.slayer) p.atk += 2;
     if (prestigeData.echoes.bossHunter) p.def += 1;
     if (prestigeData.echoes.collector) p.luck += 3;
-    // Echo bonuses â€” Tier 2
+    // Echo bonuses — Tier 2
     if (prestigeData.echoes.veteran) p.spd += 1;
     if (prestigeData.echoes.hoarder) p.potions += 2;
-    // Echo bonuses â€” Tier 3
+    // Echo bonuses — Tier 3
     if (prestigeData.echoes.deepDiver) { p.atk += 3; p.def += 3; }
     if (prestigeData.echoes.massacre) p.crit += 2;
     if (prestigeData.echoes.mythicHunter) p.luck += 5;
     if (prestigeData.echoes.persistent) { p.maxHp += 10; p.maxMp += 5; }
-    // Echo bonuses â€” Tier 4
+    // Echo bonuses — Tier 4
     if (prestigeData.echoes.abyssWalker) { p.atk += 5; p.spd += 2; }
     if (prestigeData.echoes.warlord) { p.crit += 3; p.def += 3; }
     if (prestigeData.echoes.relicMaster) { p.atk += 5; p.def += 5; p.spd += 5; p.crit += 5; p.luck += 5; }
     if (prestigeData.echoes.grinder) { p.atk += 2; p.def += 2; p.spd += 2; p.crit += 2; p.luck += 2; }
-    // Echo bonuses â€” Tier 5
+    // Echo bonuses — Tier 5
     if (prestigeData.echoes.voidConqueror) { p.atk += 8; p.crit += 5; }
     if (prestigeData.echoes.legendSlayer) { p.atk += 5; p.def += 5; p.spd += 5; p.crit += 5; p.luck += 5; }
     if (prestigeData.echoes.trueCollector) p.luck += 10;
@@ -5062,9 +5062,9 @@ function backToTitle() {
     location.reload();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 // PRESTIGE SHOP SCREEN
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════
 
 let currentPrestigeCategory = "iron";
 
@@ -5249,13 +5249,13 @@ document.addEventListener('keydown', (e) => {
     const p = gameState.player;
 
     let spdBonus = p.spd + (p.passiveEffects.speed || 0);
-    // Affinity milestone: SPD â€” bonus move range (+1 per milestone)
+    // Affinity milestone: SPD — bonus move range (+1 per milestone)
     spdBonus += getAffinityBonus("moveRange");
-    // Adrenaline â€” temporary SPD boost after kills
+    // Adrenaline — temporary SPD boost after kills
     if (p.adrenalineTurns > 0 && p.passiveEffects.adrenaline) {
         spdBonus += Math.floor(spdBonus * p.passiveEffects.adrenaline / 100);
     }
-    // Living Fortress mastery â€” +2 SPD after negating damage
+    // Living Fortress mastery — +2 SPD after negating damage
     if (hasMastery("livingFortress") && p.livingFortressSpdTurns > 0) {
         spdBonus += 2;
     }
@@ -5263,7 +5263,7 @@ document.addEventListener('keydown', (e) => {
     const maxDelay = 150;
     let moveDelay = Math.max(minDelay, maxDelay - spdBonus * 10);
 
-    // Time Dilation medallion â€” speed cannot be lower than 1.5x fastest enemy
+    // Time Dilation medallion — speed cannot be lower than 1.5x fastest enemy
     if (hasMedallion("timeDilation")) {
         moveDelay = Math.min(moveDelay, 45);
     }
@@ -5302,11 +5302,11 @@ document.addEventListener('keydown', (e) => {
     }
 
     if (moved) {
-        // Adrenaline Surge â€” free moves don't trigger enemy turn
+        // Adrenaline Surge — free moves don't trigger enemy turn
         if (p.adrenalineSurgeMoves > 0) {
             p.adrenalineSurgeMoves--;
             addLog(`Adrenaline Surge! Free move! (${p.adrenalineSurgeMoves} remaining)`, "log-level");
-            // Windfall (SPD+LUCK dual) â€” free moves can spawn loot
+            // Windfall (SPD+LUCK dual) — free moves can spawn loot
             if (hasDualPassive("windfall")) {
                 const windfallChance = 20; // 20% chance
                 if (Math.random() * 100 < windfallChance) {
