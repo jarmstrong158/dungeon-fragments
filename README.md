@@ -80,15 +80,17 @@ starting Affinity and a unique starter item with a baked-in passive.
 | Class     | Identity                                     | Starts with                                         |
 |-----------|----------------------------------------------|-----------------------------------------------------|
 | Brawler   | Wade in. Hit harder when surrounded.         | +5 ATK affinity, Cracked Hatchet (+6 ATK, Berserker 25%) |
-| Trickster | Keep moving. Drops more loot, faster moves.  | +3 SPD / +2 LUCK affinity, Loaded Dice (Lucky 5, Swift 5) |
+| Trickster | Keep moving. Drops more loot, faster moves.  | +3 SPD / +5 CRIT / +2 LUCK affinity, Loaded Dice (Lucky 5, Swift 5, Phantom Step 15) |
 | Sentinel  | Hold the line. Reward patience.              | +5 DEF affinity, Battered Cuirass (+4 DEF, Bulwark 1, Fortified 10%) |
+| Mage      | Spend MP. Kill rooms. Repeat.                | +3 ATK / +2 LUCK affinity, Arcane Tome (Arcane 20, Siphon 8) |
 
 ## Roadmap
 
 - [x] **Enemy variety** — Charger / Ranger / Healer kinds with distinct AI.
 - [x] **Starting classes** — Brawler / Trickster / Sentinel diverge from turn 1.
 - [x] **Build variety pass 1** — Kinetic Reserve nerfed (exponential → linear), Bulwark grants DEF as well as damage, Charger weight raised for more anti-kite pressure.
-- [ ] Iterate: playtest, add more stationary counter-passives, audit dual/tri mastery balance.
+- [x] **Build variety pass 2** — Iron Roots stationary counter-passive (DEF affinity), Mage class for AOE-spam identity, per-class telemetry surfaced in Prestige Shop.
+- [ ] Iterate: playtest, audit dual/tri mastery balance using the new telemetry.
 
 ## Tech notes
 

@@ -52,6 +52,9 @@ const CONFIG = {
         bulwarkDmgPerStack: 0.20,     // +20% damage per stack
         bulwarkDefPerStack: 0.05,     // +5% DEF per stack
         bulwarkStackMax: 5,
+        ironRootsDmgPerStack: 0.08,   // +8% damage per stack — gentler than bulwark
+        ironRootsDefPerStack: 0.04,   // +4% DEF per stack
+        ironRootsStackMax: 5,         // stacks alongside bulwark (different passive, same archetype)
         bleedFraction: 1 / 5,         // bleed dmg = maxHp * this
         bleedDuration: 3,
         chronoStrikeCadence: 4,       // every Nth attack triggers
@@ -114,6 +117,7 @@ let gameState = {
         medallions: [],
         affinities: { ATK: 0, DEF: 0, SPD: 0, CRIT: 0, LUCK: 0 },
         bulwarkStacks: 0,
+        ironRootsStacks: 0,
         guardianShellStacks: 0,
         adrenalineTurns: 0,
         precisionStacks: 0,
@@ -281,9 +285,9 @@ const defaultPrestigeData = {
         bestRunFragments: 0,
         // Per-class telemetry — see incrementClassRun / recordClassDeath.
         // Keys match CLASSES ids. Lets future balance passes work from data, not vibes.
-        runsByClass:        { brawler: 0, trickster: 0, sentinel: 0 },
-        floorsByClass:      { brawler: 0, trickster: 0, sentinel: 0 },
-        highestFloorByClass:{ brawler: 0, trickster: 0, sentinel: 0 }
+        runsByClass:        { brawler: 0, trickster: 0, sentinel: 0, mage: 0 },
+        floorsByClass:      { brawler: 0, trickster: 0, sentinel: 0, mage: 0 },
+        highestFloorByClass:{ brawler: 0, trickster: 0, sentinel: 0, mage: 0 }
     },
     bestRun: { floor: 0, level: 0, kills: 0, fragments: 0 }
 };
@@ -295,12 +299,17 @@ function loadPrestige() {
         const raw = localStorage.getItem('dungeonFragments_prestige');
         if (raw) {
             const loaded = JSON.parse(raw);
+            const mergedLifetimeStats = { ...defaultPrestigeData.lifetimeStats, ...(loaded.lifetimeStats || {}) };
+            // Deep-merge per-class stat sub-objects so new classes (mage, etc.) get a 0 entry on existing saves.
+            ['runsByClass', 'floorsByClass', 'highestFloorByClass'].forEach(k => {
+                mergedLifetimeStats[k] = { ...defaultPrestigeData.lifetimeStats[k], ...(mergedLifetimeStats[k] || {}) };
+            });
             prestigeData = {
                 ...JSON.parse(JSON.stringify(defaultPrestigeData)),
                 ...loaded,
                 upgrades: { ...defaultPrestigeData.upgrades, ...(loaded.upgrades || {}) },
                 echoes: { ...defaultPrestigeData.echoes, ...(loaded.echoes || {}) },
-                lifetimeStats: { ...defaultPrestigeData.lifetimeStats, ...(loaded.lifetimeStats || {}) },
+                lifetimeStats: mergedLifetimeStats,
                 bestRun: { ...defaultPrestigeData.bestRun, ...(loaded.bestRun || {}) }
             };
         } else {
@@ -368,12 +377,16 @@ function importSave() {
         if (!textarea || !textarea.value.trim()) return false;
         const data = JSON.parse(atob(textarea.value.trim()));
         if (data.version) {
+            const mergedLifetimeStats = { ...defaultPrestigeData.lifetimeStats, ...(data.lifetimeStats || {}) };
+            ['runsByClass', 'floorsByClass', 'highestFloorByClass'].forEach(k => {
+                mergedLifetimeStats[k] = { ...defaultPrestigeData.lifetimeStats[k], ...(mergedLifetimeStats[k] || {}) };
+            });
             prestigeData = {
                 ...JSON.parse(JSON.stringify(defaultPrestigeData)),
                 ...data,
                 upgrades: { ...defaultPrestigeData.upgrades, ...(data.upgrades || {}) },
                 echoes: { ...defaultPrestigeData.echoes, ...(data.echoes || {}) },
-                lifetimeStats: { ...defaultPrestigeData.lifetimeStats, ...(data.lifetimeStats || {}) },
+                lifetimeStats: mergedLifetimeStats,
                 bestRun: { ...defaultPrestigeData.bestRun, ...(data.bestRun || {}) }
             };
             savePrestige();
@@ -438,6 +451,7 @@ const PASSIVEEFFECTS = [
     { name: "Iron Will", desc: "Increased ATK based on base DEF stat", stat: "ironWill", range: [5, 20], affinity: "DEF" },
     { name: "Ironheart", desc: "Base DEF from level-ups grants 1-3% damage reduction cap per point", stat: "ironheart", range: [1, 3], affinity: "DEF" },
     { name: "Tenacity", desc: "Start each floor with a shield equal to 15-40% of base DEF. Unspent shield converts to bonus XP", stat: "tenacity", range: [15, 40], affinity: "DEF" },
+    { name: "Iron Roots", desc: "Each turn standing still: +8% damage AND +4% DEF (max 5 stacks, resets on move). Stacks alongside Bulwark", stat: "ironRoots", range: [1, 1], affinity: "DEF" },
 
     // SPD affinity
     { name: "Swift", desc: "Increase movement speed", stat: "speed", range: [5, 10], affinity: "SPD" },
@@ -801,6 +815,23 @@ const CLASSES = {
             passives: [
                 { name: "Bulwark", stat: "bulwark", value: 1, desc: "Stacking +20% damage and +5% DEF per turn standing still (max 5)" },
                 { name: "Fortified", stat: "fortify", value: 10, desc: "+10% DEF" }
+            ]
+        }
+    },
+    mage: {
+        id: "mage",
+        name: "Mage",
+        color: "#9966ff",
+        tagline: "Spend MP. Kill rooms. Repeat.",
+        desc: "AOE-focused. Cheaper specials, MP back on kill — built to fire the R key turn after turn.",
+        startingAffinity: { ATK: 3, DEF: 0, SPD: 0, CRIT: 0, LUCK: 2 },
+        starterItem: {
+            name: "Arcane Tome",
+            type: "relic",
+            atk: 0, def: 0,
+            passives: [
+                { name: "Arcane", stat: "arcane", value: 20, desc: "AOE costs 20% less MP" },
+                { name: "Siphon", stat: "siphon", value: 8, desc: "Kills restore 8% of max MP (capped)" }
             ]
         }
     }
@@ -1360,7 +1391,7 @@ function updateBuffsPanel() {
 
             // Determine display format
             let displayVal = "";
-            const activeStats = ["undying", "kineticReserve", "psychicFlare", "speedster", "bulwark", "scrapper", "lethalFocus"];
+            const activeStats = ["undying", "kineticReserve", "psychicFlare", "speedster", "bulwark", "ironRoots", "scrapper", "lethalFocus"];
             const percentStats = ["lifesteal", "berserker", "arcane", "soulrend", "goldblood", "siphon",
                 "chemist", "evasion", "momentum", "fortify", "executioner", "overwhelm", "redundantForce",
                 "lastStand", "guardianShell", "ironWill", "adrenaline", "phantomStep", "fleetfootStrikes",
@@ -1397,7 +1428,14 @@ function updateBuffsPanel() {
     if (effects.bulwark && p.bulwarkStacks > 0) {
         const div = document.createElement('div');
         div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(78,205,196,0.1); border-left: 3px solid var(--accent-secondary); font-family: 'VT323', monospace; color: var(--accent-secondary);";
-        div.innerHTML = `ðŸ›¡ Bulwark: ${p.bulwarkStacks}/${CONFIG.combat.bulwarkStackMax} stacks (+${(p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100).toFixed(0)}% damage, +${(p.bulwarkStacks * CONFIG.combat.bulwarkDefPerStack * 100).toFixed(0)}% DEF)`;
+        div.innerHTML = `🛡 Bulwark: ${p.bulwarkStacks}/${CONFIG.combat.bulwarkStackMax} stacks (+${(p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100).toFixed(0)}% damage, +${(p.bulwarkStacks * CONFIG.combat.bulwarkDefPerStack * 100).toFixed(0)}% DEF)`;
+        panel.appendChild(div);
+    }
+    // Iron Roots stacks
+    if (effects.ironRoots && p.ironRootsStacks > 0) {
+        const div = document.createElement('div');
+        div.style.cssText = "font-size: 0.5em; padding: 5px 6px; margin: 3px 0; background: rgba(120,200,120,0.15); border-left: 3px solid #7fffaa; font-family: 'VT323', monospace; color: #7fffaa;";
+        div.innerHTML = `🌿 Iron Roots: ${p.ironRootsStacks}/${CONFIG.combat.ironRootsStackMax} stacks (+${(p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack * 100).toFixed(0)}% damage, +${(p.ironRootsStacks * CONFIG.combat.ironRootsDefPerStack * 100).toFixed(0)}% DEF)`;
         panel.appendChild(div);
     }
 
@@ -2306,6 +2344,7 @@ function generateFloor() {
     }
 
     p.bulwarkStacks = 0;
+    p.ironRootsStacks = 0;
     p.guardianShellStacks = 0;
     p.enemiesHitThisFight = [];
     p.adrenalineTurns = 0;
@@ -2895,6 +2934,10 @@ function movePlayer(dx, dy) {
     if (gameState.player.passiveEffects.bulwark) {
         gameState.player.bulwarkStacks = 0;
     }
+    // Iron Roots — moving resets stacks (mirror of Bulwark; stacks via attack when standing)
+    if (gameState.player.passiveEffects.ironRoots) {
+        gameState.player.ironRootsStacks = 0;
+    }
 
     // Adrenaline â€” decrement timer on move
     if (gameState.player.adrenalineTurns > 0) {
@@ -3215,10 +3258,16 @@ function attack() {
             // (crit multiplier change handled below in crit section)
             let lethalPrecisionNonCritApplied = false;
 
-            // Bulwark â€” bonus damage from standing still stacks (see CONFIG.combat)
+            // Bulwark — bonus damage from standing still stacks (see CONFIG.combat)
             if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
                 damage = Math.floor(damage * (1 + p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack));
                 addLog(`Bulwark! +${p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100}% damage (${p.bulwarkStacks} stacks)`, "log-damage");
+            }
+
+            // Iron Roots — bonus damage from standing still stacks (mirror of Bulwark; stacks alongside it).
+            if (p.passiveEffects.ironRoots && p.ironRootsStacks > 0) {
+                damage = Math.floor(damage * (1 + p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack));
+                addLog(`Iron Roots! +${(p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack * 100).toFixed(0)}% damage (${p.ironRootsStacks} stacks)`, "log-damage");
             }
 
             // Weakpoint Specialist â€” bonus damage to bosses
@@ -3624,6 +3673,10 @@ function attack() {
         if (p.passiveEffects.bulwark && p.bulwarkStacks < CONFIG.combat.bulwarkStackMax) {
             p.bulwarkStacks++;
         }
+        // Iron Roots — increment when attacking from standstill
+        if (p.passiveEffects.ironRoots && p.ironRootsStacks < CONFIG.combat.ironRootsStackMax) {
+            p.ironRootsStacks++;
+        }
         // Convergence â€” increment stacks when not moving (max 5)
         if (hasFloorModifier("convergence") && p.convergenceStacks < 5) {
             p.convergenceStacks++;
@@ -4012,7 +4065,7 @@ function showAffinityScreen() {
 
     const affinityInfo = {
         ATK: { label: "ATK", desc: "Berserker, Executioner, Overwhelm, Redundant Force", color: "#ff6b6b" },
-        DEF: { label: "DEF", desc: "Fortified, Regeneration, Bulwark, Last Stand, Guardian Shell, Iron Will", color: "#4ecdc4" },
+        DEF: { label: "DEF", desc: "Fortified, Regeneration, Bulwark, Iron Roots, Last Stand, Guardian Shell, Iron Will", color: "#4ecdc4" },
         SPD: { label: "SPD", desc: "Swift, Evasion, Momentum, Adrenaline, Phantom Step, Fleetfoot Strikes", color: "#ffd93d" },
         CRIT: { label: "CRIT", desc: "Critical, Deadeye, Precision, Weakpoint Specialist, Shatterpoint, Assassin", color: "#ff8800" },
         LUCK: { label: "LUCK", desc: "Lucky, Chemist, Scrapper, Lucky Ascension, Fortunate Strikes", color: "#2ecc71" }
@@ -4191,7 +4244,7 @@ function sacrificeItem(slot) {
     const gains = {};
     const statMapping = {
         berserker: "atk", executioner: "atk", overwhelm: "atk", redundantForce: "atk", overcharge: "atk",
-        fortify: "def", regen: "def", bulwark: "def", lastStand: "def", guardianShell: "def", ironWill: "def", ironheart: "def", tenacity: "def",
+        fortify: "def", regen: "def", bulwark: "def", lastStand: "def", guardianShell: "def", ironWill: "def", ironheart: "def", tenacity: "def", ironRoots: "def",
         speed: "spd", evasion: "spd", momentum: "spd", adrenaline: "spd", phantomStep: "spd", fleetfootStrikes: "spd", battleTempo: "spd", adrenalineSurge: "spd",
         crit: "crit", deadeye: "crit", precision: "crit", weakpointSpecialist: "crit", shatterpoint: "crit", assassin: "crit", lethalFocus: "crit",
         luck: "luck", chemist: "luck", scrapper: "luck", luckyAscension: "luck", fortunateStrikes: "luck",
@@ -4643,6 +4696,10 @@ function getEffectivePlayerDef() {
     // Damage portion is applied in attack().
     if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
         def = Math.floor(def * (1 + p.bulwarkStacks * CONFIG.combat.bulwarkDefPerStack));
+    }
+    // Iron Roots — gentler stationary DEF bonus (stacks alongside Bulwark).
+    if (p.passiveEffects.ironRoots && p.ironRootsStacks > 0) {
+        def = Math.floor(def * (1 + p.ironRootsStacks * CONFIG.combat.ironRootsDefPerStack));
     }
     return def;
 }
@@ -5116,6 +5173,37 @@ function renderBestRun() {
             Ascended: <span style="color: #00ffcc;">${ls.totalAscendedItems}</span>
         </div>
     `;
+
+    // CLASS STATS panel — surfaces the per-class telemetry tracked in lifetimeStats.
+    const classStatsEl = document.getElementById('prestige-class-stats');
+    if (classStatsEl) {
+        const runsByClass = ls.runsByClass || {};
+        const floorsByClass = ls.floorsByClass || {};
+        const highestByClass = ls.highestFloorByClass || {};
+        const totalClassRuns = Object.values(runsByClass).reduce((s, v) => s + v, 0);
+        let rows = '';
+        Object.values(CLASSES).forEach(c => {
+            const runs = runsByClass[c.id] || 0;
+            const totalFloors = floorsByClass[c.id] || 0;
+            const highest = highestByClass[c.id] || 0;
+            const avg = runs > 0 ? (totalFloors / runs).toFixed(1) : '—';
+            const pickPct = totalClassRuns > 0 ? ((runs / totalClassRuns) * 100).toFixed(0) + '%' : '—';
+            rows += `
+                <div style="display: flex; align-items: center; padding: 6px 8px; margin: 3px 0; background: rgba(0,0,0,0.3); border-left: 3px solid ${c.color}; font-size: 0.4em;">
+                    <div style="flex: 0 0 90px; color: ${c.color}; font-family: 'Press Start 2P', cursive; font-size: 0.85em;">${c.name.toUpperCase()}</div>
+                    <div style="flex: 1; color: #aaa;">
+                        Runs: <span style="color: #f0f4f8;">${runs}</span>
+                        <span style="color: #555;"> (${pickPct})</span>
+                        &nbsp;|&nbsp; Highest: <span style="color: var(--accent-gold);">F${highest}</span>
+                        &nbsp;|&nbsp; Avg: <span style="color: #f0f4f8;">F${avg}</span>
+                    </div>
+                </div>`;
+        });
+        classStatsEl.innerHTML = `
+            <div style="font-size: 0.6em; color: #ff9eb5; margin-bottom: 10px; border-bottom: 1px solid #ff9eb5; padding-bottom: 5px;">CLASS STATS</div>
+            ${rows || '<div style="font-size: 0.4em; color: #555;">Play a run to populate.</div>'}
+        `;
+    }
 }
 
 function purchaseUpgrade(key) {
