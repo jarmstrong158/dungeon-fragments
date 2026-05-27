@@ -2,6 +2,8 @@
 
 A 16-bit roguelite grid crawler — turn-based, infinite floors, deep passive system.
 
+**▶ [Play it in your browser](https://jarmstrong158.github.io/dungeon-fragments/)**
+
 ![Title screen](assets/title-screen.png)
 
 ## What it is
@@ -22,7 +24,9 @@ prestige meta-progression that carries between runs.
 
 ## Run it
 
-It's a static site. Three options:
+Easiest: just [open the live site](https://jarmstrong158.github.io/dungeon-fragments/).
+
+For local development:
 
 ```bash
 # Option 1: Python
