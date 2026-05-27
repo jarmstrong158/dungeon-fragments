@@ -669,11 +669,16 @@
         @media (max-width: 768px) {
             body { font-size: 14px; }
 
-            /* Title screen — keep big text from overflowing. */
+            /* Title screen — keep big text from overflowing.
+             * 2.5em was always going to overflow at 390px; even 1.6em did because
+             * of the text-shadow stack. Drop further + remove the heavy outer
+             * shadow that ate the right edge. */
             #title-screen h1 {
-                font-size: 1.6em !important;
+                font-size: 1.2em !important;
                 margin-bottom: 25px !important;
                 line-height: 1.2;
+                text-shadow: 2px 2px 0px var(--accent-secondary), 4px 4px 0px rgba(0,0,0,0.3) !important;
+                word-wrap: break-word;
             }
             #title-screen .subtitle { font-size: 1em !important; margin-bottom: 35px !important; }
             #title-screen button { padding: 14px 22px; font-size: 0.7em; margin: 6px; }
@@ -810,8 +815,14 @@
                 font-size: 1em;
             }
 
-            /* On-screen touch controls — D-pad bottom-left, actions bottom-right. */
-            #touch-controls {
+            /* On-screen touch controls — D-pad bottom-left, actions bottom-right.
+             * Only meaningful while a run is in progress, so default to hidden;
+             * body.in-game toggles them on (set by startGame / cleared by gameOver). */
+            #touch-controls,
+            #mobile-drawer-toggle {
+                display: none;
+            }
+            body.in-game #touch-controls {
                 display: block;
                 position: fixed;
                 left: 0;
@@ -820,6 +831,9 @@
                 pointer-events: none;
                 z-index: 500;
                 padding: 12px;
+            }
+            body.in-game #mobile-drawer-toggle {
+                display: block;
             }
             #touch-dpad {
                 pointer-events: auto;

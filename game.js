@@ -4781,6 +4781,7 @@ function forecastDamage() {
 // Game over
 function gameOver() {
     gameState.gameRunning = false;
+    document.body.classList.remove('in-game'); // hide mobile touch overlay
     MusicEngine.stop();
     document.getElementById('game-screen').style.display = "none";
     const over = document.getElementById('game-over-screen');
@@ -4980,6 +4981,7 @@ function startGame() {
     document.getElementById('prestige-shop-screen').style.display = "none";
     document.getElementById('game-screen').style.display = "block";
     gameState.gameRunning = true;
+    document.body.classList.add('in-game'); // gates mobile touch controls + drawer visibility
 
     // Apply prestige bonuses before anything else
     applyPrestigeBonuses();
