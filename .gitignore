@@ -11,3 +11,7 @@ Thumbs.db
 # Logs / scratch
 *.log
 _scratch/
+_mobile*.png
+_*.png
+_*.ps1
+_*.txt
