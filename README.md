@@ -2,7 +2,7 @@
 
 A 16-bit roguelite grid crawler — turn-based, infinite floors, deep passive system.
 
-![Title screen](docs/title-screen.png)
+![Title screen](assets/title-screen.png)
 
 ## What it is
 
