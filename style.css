@@ -647,3 +647,256 @@
             border-color: #333;
             box-shadow: 0 2px 0 #1a1a1a;
         }
+
+
+        /* =====================================================================
+         * Mobile / touch support
+         * =====================================================================
+         * - Touch controls are present in the DOM at all times (created in HTML)
+         *   but display:none unless we're below the mobile breakpoint.
+         * - The mobile drawer slides up from the bottom and contains buffs,
+         *   stats, inventory, and the log — all the panels that don't fit on
+         *   a narrow viewport.
+         * - prevent native pinch-zoom / double-tap-zoom on the gameplay area.
+         */
+        #touch-controls,
+        #mobile-drawer,
+        #mobile-drawer-toggle,
+        #mobile-stat-strip {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body { font-size: 14px; }
+
+            /* Title screen — keep big text from overflowing. */
+            #title-screen h1 {
+                font-size: 1.6em !important;
+                margin-bottom: 25px !important;
+                line-height: 1.2;
+            }
+            #title-screen .subtitle { font-size: 1em !important; margin-bottom: 35px !important; }
+            #title-screen button { padding: 14px 22px; font-size: 0.7em; margin: 6px; }
+
+            /* Class select — single column. */
+            #class-cards { flex-direction: column !important; align-items: center; }
+            .class-card { width: 90vw !important; max-width: 360px; }
+
+            #game-container { padding: 6px !important; }
+
+            /* Hide all the desktop-layout panels — they live in the drawer instead. */
+            #buffs-panel,
+            #stats-panel,
+            #game-area .panel:last-child, /* inventory panel — last .panel inside #game-area */
+            #log,
+            #controls,
+            #game-screen > .panel { /* the controls panel below the log */
+                display: none;
+            }
+
+            /* Game area becomes a single column with the canvas centred. */
+            #game-area {
+                display: block !important;
+                margin-bottom: 0 !important;
+            }
+
+            /* Canvas scales to viewport width while preserving its square aspect. */
+            #game-canvas {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: auto !important;
+                aspect-ratio: 1 / 1;
+                display: block;
+                margin: 0 auto;
+                border-width: 2px;
+                touch-action: manipulation;
+            }
+
+            #floor-indicator { font-size: 0.7em; padding: 6px; }
+            #floor-modifiers { font-size: 0.45em !important; }
+
+            /* Slim stat strip above canvas: HP/MP/floor in one row. */
+            #mobile-stat-strip {
+                display: flex;
+                gap: 6px;
+                padding: 4px 8px;
+                font-family: 'VT323', monospace;
+                font-size: 1em;
+                color: var(--text-light);
+                background: rgba(0,0,0,0.4);
+                border-bottom: 1px solid var(--accent-secondary);
+                justify-content: space-between;
+            }
+            #mobile-stat-strip > span { white-space: nowrap; }
+
+            /* Drawer toggle — single button top-right that opens the drawer. */
+            #mobile-drawer-toggle {
+                display: block;
+                position: fixed;
+                top: 8px;
+                right: 8px;
+                z-index: 600;
+                width: 48px;
+                height: 48px;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 0.7em;
+                background: var(--bg-mid);
+                color: var(--accent-gold);
+                border: 2px solid var(--accent-gold);
+                cursor: pointer;
+                padding: 0;
+            }
+
+            /* Drawer itself — slides up from bottom, ~75vh tall when open. */
+            #mobile-drawer {
+                display: block;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 0;
+                background: var(--bg-dark);
+                border-top: 3px solid var(--accent-secondary);
+                z-index: 550;
+                overflow: hidden;
+                transition: height 0.25s ease;
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            }
+            #mobile-drawer.open { height: 75vh; }
+            #mobile-drawer-tabs {
+                display: flex;
+                gap: 4px;
+                padding: 8px;
+                background: var(--bg-mid);
+                border-bottom: 2px solid var(--accent-secondary);
+            }
+            #mobile-drawer-tabs button {
+                flex: 1;
+                padding: 10px 6px;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 0.55em;
+                background: transparent;
+                color: var(--text-light);
+                border: 2px solid #444;
+                cursor: pointer;
+                box-shadow: none;
+                margin: 0;
+            }
+            #mobile-drawer-tabs button.active {
+                border-color: var(--accent-gold);
+                color: var(--accent-gold);
+                background: rgba(255,217,61,0.1);
+            }
+            #mobile-drawer-content {
+                padding: 12px;
+                height: calc(75vh - 60px);
+                overflow-y: auto;
+            }
+            #mobile-drawer-content .panel {
+                background: transparent;
+                border: none;
+                padding: 0;
+                box-shadow: none;
+                display: block !important;
+            }
+            #mobile-drawer-content #log {
+                display: block !important;
+                max-height: none;
+                min-height: 200px;
+                background: rgba(0,0,0,0.4);
+                border: 1px solid var(--accent-secondary);
+                padding: 10px;
+                font-family: 'VT323', monospace;
+                font-size: 1em;
+            }
+
+            /* On-screen touch controls — D-pad bottom-left, actions bottom-right. */
+            #touch-controls {
+                display: block;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                z-index: 500;
+                padding: 12px;
+            }
+            #touch-dpad {
+                pointer-events: auto;
+                position: absolute;
+                left: 16px;
+                bottom: 16px;
+                display: grid;
+                grid-template-columns: 56px 56px 56px;
+                grid-template-rows: 56px 56px 56px;
+                gap: 4px;
+            }
+            #touch-actions {
+                pointer-events: auto;
+                position: absolute;
+                right: 16px;
+                bottom: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-end;
+            }
+            .touch-btn {
+                font-family: 'Press Start 2P', cursive;
+                background: rgba(26, 31, 58, 0.85);
+                color: var(--text-light);
+                border: 2px solid var(--accent-secondary);
+                font-size: 0.7em;
+                cursor: pointer;
+                touch-action: manipulation;
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-tap-highlight-color: transparent;
+                box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+                padding: 0;
+                margin: 0;
+            }
+            .touch-btn:active {
+                transform: translateY(2px);
+                box-shadow: 0 1px 0 rgba(0,0,0,0.5);
+            }
+            .touch-btn.dir {
+                width: 56px;
+                height: 56px;
+                font-size: 1.1em;
+            }
+            .touch-btn.action-attack {
+                width: 72px;
+                height: 72px;
+                font-size: 0.7em;
+                border-color: var(--accent-primary);
+                color: var(--accent-primary);
+            }
+            .touch-btn.action-aoe {
+                width: 60px;
+                height: 60px;
+                font-size: 0.6em;
+                border-color: #ff8000;
+                color: #ff8000;
+            }
+            .touch-btn.action-pot {
+                width: 56px;
+                height: 56px;
+                font-size: 0.55em;
+                border-color: #2ecc71;
+                color: #2ecc71;
+            }
+            /* Slot the D-pad arrows into the 3x3 grid. */
+            #touch-dpad .dpad-up    { grid-column: 2; grid-row: 1; }
+            #touch-dpad .dpad-left  { grid-column: 1; grid-row: 2; }
+            #touch-dpad .dpad-right { grid-column: 3; grid-row: 2; }
+            #touch-dpad .dpad-down  { grid-column: 2; grid-row: 3; }
+
+            /* Music toggle — move out of the way on mobile. */
+            #music-controls {
+                top: 8px !important;
+                left: 8px !important;
+                right: auto !important;
+            }
+            #music-toggle { padding: 6px 10px; font-size: 0.5em; }
+        }

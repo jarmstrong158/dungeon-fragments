@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dungeon Fragments - 16-bit Roguelite RPG</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -312,10 +312,17 @@
                 </div>
                 
                 <div>
+                    <div id="mobile-stat-strip">
+                        <span>F<span id="mobile-floor">1</span></span>
+                        <span style="color: #ff6b6b;">HP <span id="mobile-hp">100/100</span></span>
+                        <span style="color: #4ecdc4;">MP <span id="mobile-mp">50/50</span></span>
+                        <span style="color: #2ecc71;">Lv <span id="mobile-level">1</span></span>
+                        <span style="color: #ffd93d;">P <span id="mobile-potions">3</span></span>
+                    </div>
                     <canvas id="game-canvas" width="640" height="640"></canvas>
                 </div>
                 
-                <div class="panel">
+                <div class="panel" id="inventory-panel">
                     <h3 style="font-size: 0.7em; color: var(--accent-gold); margin-bottom: 15px; text-align: center;">INVENTORY</h3>
                     <div id="inventory"></div>
                 </div>
@@ -503,6 +510,32 @@
                 <div id="dual-passive-subtitle" style="font-size: 0.5em; color: #aaa; margin-bottom: 15px;"></div>
                 <div id="dual-passive-options" style="max-height: 400px; overflow-y: auto;"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Mobile-only: drawer toggle, slide-up drawer for buffs/stats/inventory/log, touch controls.
+         All hidden via display:none at desktop widths; revealed by @media (max-width: 768px). -->
+    <button id="mobile-drawer-toggle" onclick="toggleMobileDrawer()">≡</button>
+    <div id="mobile-drawer">
+        <div id="mobile-drawer-tabs">
+            <button data-tab="stats" onclick="switchMobileTab('stats')" class="active">STATS</button>
+            <button data-tab="buffs" onclick="switchMobileTab('buffs')">BUFFS</button>
+            <button data-tab="inv" onclick="switchMobileTab('inv')">INV</button>
+            <button data-tab="log" onclick="switchMobileTab('log')">LOG</button>
+        </div>
+        <div id="mobile-drawer-content"></div>
+    </div>
+    <div id="touch-controls">
+        <div id="touch-dpad">
+            <button class="touch-btn dir dpad-up" data-key="w">▲</button>
+            <button class="touch-btn dir dpad-left" data-key="a">◀</button>
+            <button class="touch-btn dir dpad-right" data-key="d">▶</button>
+            <button class="touch-btn dir dpad-down" data-key="s">▼</button>
+        </div>
+        <div id="touch-actions">
+            <button class="touch-btn action-attack" data-key=" ">ATK</button>
+            <button class="touch-btn action-aoe" data-key="r">AOE</button>
+            <button class="touch-btn action-pot" data-key="e">POT</button>
         </div>
     </div>
 

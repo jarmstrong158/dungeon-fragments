@@ -5356,3 +5356,118 @@ window.discardItem = discardItem;
 window.equipDualPassive = equipDualPassive;
 window.swapDualPassive = swapDualPassive;
 window.closeDualPassiveSelection = closeDualPassiveSelection;
+
+// =============================================================================
+// MOBILE / TOUCH SUPPORT
+// =============================================================================
+// Touch controls dispatch synthetic keydown events into the existing handler,
+// so we don't have to refactor the keydown logic at all. The drawer relocates
+// the four desktop side-panels into tabbed wrappers when on a small viewport.
+
+const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+
+function isMobileViewport() {
+    return window.matchMedia(MOBILE_BREAKPOINT_QUERY).matches;
+}
+
+function toggleMobileDrawer() {
+    const drawer = document.getElementById('mobile-drawer');
+    if (!drawer) return;
+    drawer.classList.toggle('open');
+}
+window.toggleMobileDrawer = toggleMobileDrawer;
+
+function switchMobileTab(name) {
+    const tabs = document.querySelectorAll('#mobile-drawer-tabs button');
+    tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('#mobile-drawer-content > [data-mobile-tab]').forEach(w => {
+        w.style.display = (w.dataset.mobileTab === name) ? 'block' : 'none';
+    });
+}
+window.switchMobileTab = switchMobileTab;
+
+// Move desktop panels into the drawer under tab-specific wrappers. Called once
+// on first mobile detection (or viewport change). Safe to call multiple times —
+// it bails if the panels are already in the drawer.
+function setupMobileDrawer() {
+    const drawerContent = document.getElementById('mobile-drawer-content');
+    if (!drawerContent) return;
+    if (drawerContent.dataset.populated === '1') return;
+    drawerContent.dataset.populated = '1';
+
+    const tabMap = {
+        stats: 'stats-panel',
+        buffs: 'buffs-panel',
+        inv:   'inventory-panel',
+        log:   'log'
+    };
+    Object.entries(tabMap).forEach(([tab, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const wrapper = document.createElement('div');
+        wrapper.dataset.mobileTab = tab;
+        wrapper.style.display = (tab === 'stats') ? 'block' : 'none';
+        el.parentNode.insertBefore(wrapper, el);
+        wrapper.appendChild(el);
+        drawerContent.appendChild(wrapper);
+    });
+}
+
+// Refresh the slim stat strip above the canvas on every bar update.
+// Hooks the existing updateBars() by wrapping it.
+const _origUpdateBars = typeof updateBars === 'function' ? updateBars : null;
+if (_origUpdateBars) {
+    updateBars = function() {
+        _origUpdateBars.apply(this, arguments);
+        const p = gameState.player;
+        const hp = document.getElementById('mobile-hp');
+        const mp = document.getElementById('mobile-mp');
+        const lv = document.getElementById('mobile-level');
+        const po = document.getElementById('mobile-potions');
+        const fl = document.getElementById('mobile-floor');
+        if (hp) hp.textContent = `${p.hp}/${p.maxHp}`;
+        if (mp) mp.textContent = `${p.mp}/${p.maxMp}`;
+        if (lv) lv.textContent = p.level;
+        if (po) po.textContent = p.potions;
+        if (fl) fl.textContent = gameState.floor;
+    };
+}
+
+// Wire each .touch-btn to dispatch a synthetic keydown matching data-key.
+// pointerdown fires for touch, mouse, and pen — single handler covers all.
+function setupTouchControls() {
+    document.querySelectorAll('.touch-btn').forEach(btn => {
+        if (btn.dataset.wired === '1') return;
+        btn.dataset.wired = '1';
+        const fire = (e) => {
+            e.preventDefault();
+            const key = btn.dataset.key;
+            if (!key) return;
+            document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+        };
+        btn.addEventListener('pointerdown', fire);
+        // Suppress the synthetic mousedown that follows touchstart on some browsers.
+        btn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    });
+}
+
+// Initialise mobile-specific UI on load and on viewport changes.
+function initMobileUI() {
+    if (isMobileViewport()) {
+        setupMobileDrawer();
+        setupTouchControls();
+    } else {
+        // Wire touch controls even on desktop so DevTools-mobile-simulation works
+        // without a reload.
+        setupTouchControls();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileUI);
+} else {
+    initMobileUI();
+}
+window.matchMedia(MOBILE_BREAKPOINT_QUERY).addEventListener('change', () => {
+    if (isMobileViewport()) setupMobileDrawer();
+});
