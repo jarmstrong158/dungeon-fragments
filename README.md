@@ -15,12 +15,16 @@ prestige meta-progression that carries between runs.
 
 ## Controls
 
+**Desktop:**
+
 | Key       | Action               |
 |-----------|----------------------|
 | WASD / ←↑↓→ | Move one tile      |
 | Space     | Melee attack (adjacent enemies) |
 | R         | AOE blast (costs MP) |
 | E         | Drink potion         |
+
+**Mobile:** on-screen D-pad (bottom-left) for movement, ATK / AOE / POT (bottom-right) for actions. Tap ≡ (top-right) for stats / buffs / inventory / log.
 
 ## Run it
 
@@ -94,6 +98,7 @@ starting Affinity and a unique starter item with a baked-in passive.
 - [x] **Starting classes** — Brawler / Trickster / Sentinel diverge from turn 1.
 - [x] **Build variety pass 1** — Kinetic Reserve nerfed (exponential → linear), Bulwark grants DEF as well as damage, Charger weight raised for more anti-kite pressure.
 - [x] **Build variety pass 2** — Iron Roots stationary counter-passive (DEF affinity), Mage class for AOE-spam identity, per-class telemetry surfaced in Prestige Shop.
+- [x] **Mobile support** — touch overlay (D-pad + actions + drawer), responsive layout, slim stat strip. Works on phone browsers.
 - [ ] Iterate: playtest, audit dual/tri mastery balance using the new telemetry.
 
 ## Tech notes
