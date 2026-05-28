@@ -79,6 +79,10 @@ const MusicEngine = {
         arpIndex: 0,
         arpActive: true,
         activeChordOscs: [],
+        // Every scheduled oscillator across every layer goes here so that
+        // _crossfadeToNext can silence everything in flight — previously only
+        // chord oscs were tracked, leaving 7s drones audible into the next track.
+        activeOscs: [],
         currentTrack: 0,
         loopsBeforeSwitch: 4,
         crossfading: false,
@@ -347,6 +351,19 @@ const MusicEngine = {
         }
     },
 
+    // Track an oscillator so _crossfadeToNext can silence it. Wraps onended
+    // so the original cleanup (disconnect) still runs.
+    _track(osc, gain) {
+        const entry = { osc, gain };
+        this.state.activeOscs.push(entry);
+        const prevOnended = osc.onended;
+        osc.onended = () => {
+            if (prevOnended) try { prevOnended(); } catch(e) {}
+            const i = this.state.activeOscs.indexOf(entry);
+            if (i >= 0) this.state.activeOscs.splice(i, 1);
+        };
+    },
+
     _scheduleChord(time, notes, duration) {
         const track = TRACKS[this.state.currentTrack];
         // Fade out old chord oscillators
@@ -375,6 +392,7 @@ const MusicEngine = {
             osc.start(time);
             osc.stop(time + duration + 0.5);
             osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+            this._track(osc, gain);
 
             this.state.activeChordOscs.push({ osc, gainNode: gain });
         });
@@ -399,6 +417,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + duration + 0.02);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
     },
 
     _scheduleMelody(time, duration) {
@@ -426,6 +445,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + duration + 0.02);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
     },
 
     _scheduleKick(time) {
@@ -445,6 +465,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + 0.15);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
 
         // Sharp click transient — classic SNES-style attack
         const click = this.audioCtx.createOscillator();
@@ -493,6 +514,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + 0.08);
         osc.onended = () => { osc.disconnect(); oscGain.disconnect(); };
+        this._track(osc, oscGain);
     },
 
     _scheduleHiHat(time, velMult) {
@@ -581,6 +603,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + duration + 0.02);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
     },
 
     _scheduleDrone(time, note, duration) {
@@ -602,6 +625,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + duration + 0.5);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
     },
 
     _scheduleSidestick(time) {
@@ -621,6 +645,7 @@ const MusicEngine = {
         osc.start(time);
         osc.stop(time + 0.04);
         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        this._track(osc, gain);
     },
 
     _crossfadeToNext() {
@@ -635,9 +660,20 @@ const MusicEngine = {
         this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, now);
         this.masterGain.gain.linearRampToValueAtTime(0, now + fadeTime);
 
-        // Stop chord oscillators at end of fade
+        // Silence and stop EVERY tracked oscillator from the outgoing track.
+        // Previously only activeChordOscs were stopped, which let long-duration
+        // sources (notably Deep Cavern's ~7s drone) bleed into the next track.
+        this.state.activeOscs.forEach(({ osc, gain }) => {
+            try {
+                gain.gain.cancelScheduledValues(now);
+                gain.gain.setTargetAtTime(0, now, 0.05);
+                osc.stop(now + 0.2);
+            } catch(e) {}
+        });
+        this.state.activeOscs = [];
+        // Legacy chord-osc tracking — redundant with activeOscs now but harmless.
         this.state.activeChordOscs.forEach(o => {
-            try { o.gainNode.gain.setTargetAtTime(0, now + fadeTime * 0.8, 0.2); o.osc.stop(now + fadeTime + 0.3); } catch(e) {}
+            try { o.gainNode.gain.setTargetAtTime(0, now, 0.05); o.osc.stop(now + 0.2); } catch(e) {}
         });
 
         // After fade out, switch track and fade back in
