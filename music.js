@@ -704,3 +704,18 @@ const MusicEngine = {
         }, fadeTime * 1000);
     },
 };
+
+// Pause music when the tab is hidden (suspend AudioContext) and resume on focus.
+// Prevents the "I closed the game tab but music is still playing" problem when
+// the browser keeps a backgrounded tab's audio alive.
+document.addEventListener('visibilitychange', () => {
+    if (!MusicEngine.audioCtx) return;
+    if (document.hidden) {
+        // Suspend the entire AudioContext — silences everything immediately,
+        // including in-flight oscillators. No state changes; resume picks up
+        // where we left off.
+        MusicEngine.audioCtx.suspend().catch(() => {});
+    } else if (MusicEngine.state.isPlaying) {
+        MusicEngine.audioCtx.resume().catch(() => {});
+    }
+});
