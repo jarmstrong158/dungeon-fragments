@@ -83,6 +83,7 @@ const CONFIG = {
 // Game state
 let gameState = {
     selectedClass: null, // set by selectClass(); read by startGame() to apply class kit
+    lastLevelUpAlloc: null, // snapshot of last confirmed stat allocation; powers the REPEAT LAST button
     player: {
         x: 10,
         y: 10,
@@ -4009,7 +4010,38 @@ function showLevelUpScreen() {
 
     remainingSpan.textContent = gameState.pendingStatPoints;
     confirmBtn.disabled = gameState.pendingStatPoints > 0;
+
+    // REPEAT LAST button — only show if there's a snapshot from a previous level-up this run.
+    const repeatBtn = document.getElementById('levelup-repeat-btn');
+    if (repeatBtn) {
+        repeatBtn.style.display = gameState.lastLevelUpAlloc ? 'inline-block' : 'none';
+    }
 }
+
+// Re-apply the previous level-up's stat allocation in one click.
+// Caps at total available points (handles edge case where Echo: Delver changed
+// between level-ups, though it shouldn't mid-run). Player still clicks CONFIRM.
+function repeatLastAllocation() {
+    const last = gameState.lastLevelUpAlloc;
+    if (!last) return;
+    const t = gameState.tempAllocations;
+    // Total points available = currently-pending + already-allocated this session.
+    const total = gameState.pendingStatPoints + (t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.luck + t.crit);
+    let remaining = total;
+    const order = ['maxHp', 'maxMp', 'atk', 'def', 'spd', 'luck', 'crit'];
+    const newAlloc = { maxHp: 0, maxMp: 0, atk: 0, def: 0, spd: 0, luck: 0, crit: 0 };
+    order.forEach(k => {
+        const want = last[k] || 0;
+        const give = Math.min(want, remaining);
+        newAlloc[k] = give;
+        remaining -= give;
+    });
+    gameState.tempAllocations = newAlloc;
+    gameState.pendingStatPoints = remaining;
+    // Rebuild the rows so the visible values reflect the new allocation.
+    showLevelUpScreen();
+}
+window.repeatLastAllocation = repeatLastAllocation;
 
 function confirmLevelUp() {
     const p = gameState.player;
@@ -4027,6 +4059,13 @@ function confirmLevelUp() {
 
     p.hp = p.maxHp;
     p.mp = p.maxMp;
+
+    // Snapshot for REPEAT LAST button. Skip an all-zeros allocation (which would
+    // happen if the player got forced through with no points — defensive).
+    const allocTotal = t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.luck + t.crit;
+    if (allocTotal > 0) {
+        gameState.lastLevelUpAlloc = { ...t };
+    }
 
     gameState.pendingStatPoints = 0;
     gameState.tempAllocations = {
