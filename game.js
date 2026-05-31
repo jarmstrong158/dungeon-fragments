@@ -329,7 +329,11 @@ const defaultPrestigeData = {
         // Keys match CLASSES ids. Lets future balance passes work from data, not vibes.
         runsByClass:        { brawler: 0, trickster: 0, sentinel: 0, mage: 0 },
         floorsByClass:      { brawler: 0, trickster: 0, sentinel: 0, mage: 0 },
-        highestFloorByClass:{ brawler: 0, trickster: 0, sentinel: 0, mage: 0 }
+        highestFloorByClass:{ brawler: 0, trickster: 0, sentinel: 0, mage: 0 },
+        // Passive trigger counts — populated by recordPassive() at each proc site.
+        // Sparse: keys appear as they fire. Surfaces dead passives (zero or low)
+        // in the prestige shop so future balance passes know what's not earning.
+        passiveTriggerCounts: {}
     },
     bestRun: { floor: 0, level: 0, kills: 0, fragments: 0 }
 };
@@ -346,6 +350,8 @@ function loadPrestige() {
             ['runsByClass', 'floorsByClass', 'highestFloorByClass'].forEach(k => {
                 mergedLifetimeStats[k] = { ...defaultPrestigeData.lifetimeStats[k], ...(mergedLifetimeStats[k] || {}) };
             });
+            // passiveTriggerCounts is sparse — just preserve what we have.
+            mergedLifetimeStats.passiveTriggerCounts = { ...(mergedLifetimeStats.passiveTriggerCounts || {}) };
             prestigeData = {
                 ...JSON.parse(JSON.stringify(defaultPrestigeData)),
                 ...loaded,
@@ -423,6 +429,7 @@ function importSave() {
             ['runsByClass', 'floorsByClass', 'highestFloorByClass'].forEach(k => {
                 mergedLifetimeStats[k] = { ...defaultPrestigeData.lifetimeStats[k], ...(mergedLifetimeStats[k] || {}) };
             });
+            mergedLifetimeStats.passiveTriggerCounts = { ...(mergedLifetimeStats.passiveTriggerCounts || {}) };
             prestigeData = {
                 ...JSON.parse(JSON.stringify(defaultPrestigeData)),
                 ...data,
@@ -1046,6 +1053,7 @@ function generateLoot(isBoss = false, dropPotion = false, minRarity = null) {
             if (next && next !== RARITIES.MYTHIC && next !== RARITIES.ASCENDED) {
                 rarity = next;
                 addLog(`Lucky Ascension! Gear upgraded to ${rarity.name}!`, "log-loot");
+                recordPassive("Lucky Ascension");
             }
         }
     }
@@ -1405,6 +1413,16 @@ function hasDualPassive(stat) {
 // Helper: check if a mastery is active (equipped on gear)
 function hasMastery(stat) {
     return gameState.player.masteries.some(m => m.stat === stat);
+}
+
+// Telemetry: record a passive trigger. Safe to call before prestigeData loads.
+// Names are free-form display strings (e.g. "Berserker", "Iron Roots") and
+// surface as-is in the Prestige Shop's PASSIVE USAGE panel.
+function recordPassive(name) {
+    if (!prestigeData || !prestigeData.lifetimeStats) return;
+    const counts = prestigeData.lifetimeStats.passiveTriggerCounts || {};
+    counts[name] = (counts[name] || 0) + 1;
+    prestigeData.lifetimeStats.passiveTriggerCounts = counts;
 }
 
 // Buff display panel — shows all active passive effects and medallions
@@ -1991,6 +2009,7 @@ function discardItem(index) {
     if (gameState.player.passiveEffects.scrapper && Math.random() < 0.5) {
         discardAmount = 2;
         addLog("Scrapper! Double discard progress!", "log-loot");
+        recordPassive("Scrapper");
     }
     gameState.discardCounts[rarityName] += discardAmount;
 
@@ -2003,6 +2022,7 @@ function discardItem(index) {
         gameState.player[chosen] += 1;
         const displayName = chosen === "maxHp" ? "Max HP" : chosen === "maxMp" ? "Max MP" : chosen.toUpperCase();
         addLog(`Soul Forge! +1 ${displayName}!`, "log-level");
+        recordPassive("Soul Forge");
         updateStats();
     }
 
@@ -2154,6 +2174,7 @@ function discardAllOfRarity(rarityKey) {
             return `+${v} ${name}`;
         }).join(", ");
         addLog(`Soul Forge! ${summary}`, "log-level");
+        recordPassive("Soul Forge");
         updateStats();
     }
 
@@ -3059,6 +3080,7 @@ function movePlayer(dx, dy) {
         if (gameState.player.battleTempoMoves >= tempoThreshold && !gameState.player.battleTempoCharged) {
             gameState.player.battleTempoCharged = true;
             addLog(`Battle Tempo charged! Next attack deals +${gameState.player.passiveEffects.battleTempo}% damage!`, "log-level");
+            recordPassive("Battle Tempo");
             updateBuffsPanel();
         }
     }
@@ -3069,6 +3091,7 @@ function movePlayer(dx, dy) {
         if (gameState.player.blitzStrikeMoves >= 4 && !gameState.player.blitzStrikeCharged) {
             gameState.player.blitzStrikeCharged = true;
             addLog("Blitz Strike charged! Next attack deals massive bonus damage!", "log-boss");
+            recordPassive("Blitz Strike");
             updateBuffsPanel();
         }
     }
@@ -3110,6 +3133,7 @@ function movePlayer(dx, dy) {
                 gameState.player.xp += e.xp;
                 gameState.stats.kills++;
                 addLog("Phantom Step killed an enemy!", "log-boss");
+                recordPassive("Phantom Step");
                 return false;
             }
             return true;
@@ -3152,6 +3176,7 @@ function movePlayer(dx, dy) {
                     // Stun on crit
                     enemy.bastionStunned = 1;
                     addLog(`Bastion CRIT! ${bastionDmg} damage + stun!`, "log-boss");
+                    recordPassive("Bastion");
                 } else {
                     addLog(`Bastion deals ${bastionDmg} damage!`, "log-damage");
                 }
@@ -3163,6 +3188,7 @@ function movePlayer(dx, dy) {
                 gameState.player.xp += e.xp;
                 gameState.stats.kills++;
                 addLog("Bastion killed an enemy!", "log-boss");
+                recordPassive("Bastion");
                 return false;
             }
             return true;
@@ -3194,6 +3220,7 @@ function movePlayer(dx, dy) {
             if (gt.x === newX && gt.y === newY) {
                 gameState.player.atk += 2;
                 addLog("Gold tile! +2 ATK!", "log-level");
+                recordPassive("Gold Tile (Gambler's Ruin)");
             } else {
                 remaining.push(gt);
             }
@@ -3341,6 +3368,7 @@ function attack() {
                 if (adjacentCount > 1) {
                     damage = Math.floor(damage * (1 + (adjacentCount - 1) * 0.1));
                     addLog(`Berserker! +${(adjacentCount - 1) * 10}% damage (${adjacentCount} adjacent)`, "log-damage");
+                    recordPassive("Berserker");
                 }
             }
 
@@ -3349,6 +3377,7 @@ function attack() {
                 if (!p.enemiesHitThisFight.includes(enemy)) {
                     damage = Math.floor(damage * (1 + p.passiveEffects.overwhelm / 100));
                     addLog(`Overwhelm! +${p.passiveEffects.overwhelm}% first-hit bonus!`, "log-damage");
+                    recordPassive("Overwhelm");
                     p.enemiesHitThisFight.push(enemy);
                 }
             }
@@ -3357,12 +3386,14 @@ function attack() {
             if (p.passiveEffects.executioner && enemy.hp < enemy.maxHp * 0.4) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.executioner / 100));
                 addLog(`Executioner! +${p.passiveEffects.executioner}% damage (enemy low HP)`, "log-damage");
+                recordPassive("Executioner");
             }
 
             // Deathbringer mastery (ATK+DEF+CRIT) — 2x damage to enemies below 50% HP
             if (hasMastery("deathbringer") && enemy.hp < enemy.maxHp * 0.5) {
                 damage = Math.floor(damage * 2);
                 addLog("Deathbringer! 2x damage (enemy below 50% HP)!", "log-boss");
+                recordPassive("Deathbringer");
             }
 
             // Lethal Precision mastery (ATK+CRIT) — non-crits deal +15% bonus
@@ -3373,18 +3404,21 @@ function attack() {
             if (p.passiveEffects.bulwark && p.bulwarkStacks > 0) {
                 damage = Math.floor(damage * (1 + p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack));
                 addLog(`Bulwark! +${p.bulwarkStacks * CONFIG.combat.bulwarkDmgPerStack * 100}% damage (${p.bulwarkStacks} stacks)`, "log-damage");
+                recordPassive("Bulwark");
             }
 
             // Iron Roots — bonus damage from standing still stacks (mirror of Bulwark; stacks alongside it).
             if (p.passiveEffects.ironRoots && p.ironRootsStacks > 0) {
                 damage = Math.floor(damage * (1 + p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack));
                 addLog(`Iron Roots! +${(p.ironRootsStacks * CONFIG.combat.ironRootsDmgPerStack * 100).toFixed(0)}% damage (${p.ironRootsStacks} stacks)`, "log-damage");
+                recordPassive("Iron Roots");
             }
 
             // Weakpoint Specialist — bonus damage to bosses
             if (p.passiveEffects.weakpointSpecialist && (enemy.isBoss || enemy.isRareBoss)) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.weakpointSpecialist / 100));
                 addLog(`Weakpoint! +${p.passiveEffects.weakpointSpecialist}% boss damage!`, "log-damage");
+                recordPassive("Weakpoint Specialist");
             }
 
             // Momentum — SPD-based damage bonus
@@ -3397,6 +3431,7 @@ function attack() {
             if (p.passiveEffects.battleTempo && p.battleTempoCharged) {
                 damage = Math.floor(damage * (1 + p.passiveEffects.battleTempo / 100));
                 addLog(`Battle Tempo! +${p.passiveEffects.battleTempo}% damage!`, "log-damage");
+                recordPassive("Battle Tempo");
                 p.battleTempoCharged = false;
                 p.battleTempoMoves = 0;
                 updateBuffsPanel();
@@ -3418,6 +3453,7 @@ function attack() {
                 const kineticMult = 1 + CONFIG.combat.kineticPerStack * p.kineticStacks;
                 damage = Math.floor(damage * kineticMult);
                 addLog(`Kinetic Reserve x${kineticMult.toFixed(1)}! (${p.kineticStacks} stacks)`, "log-damage");
+                recordPassive("Kinetic Reserve");
                 p.kineticStacks = 0;
                 updateBuffsPanel();
             }
@@ -3427,6 +3463,7 @@ function attack() {
                 const ufBonus = 30 * p.unyieldingForceStacks; // ~30% per stack, up to 3
                 damage = Math.floor(damage * (1 + ufBonus / 100));
                 addLog(`Unyielding Force! +${ufBonus}% damage (${p.unyieldingForceStacks} stacks)!`, "log-damage");
+                recordPassive("Unyielding Force");
                 p.unyieldingForceStacks = 0;
                 updateBuffsPanel();
             }
@@ -3436,6 +3473,7 @@ function attack() {
                 const blitzBonus = 100; // 100% bonus damage
                 damage = Math.floor(damage * (1 + blitzBonus / 100));
                 addLog(`Blitz Strike! +${blitzBonus}% damage!`, "log-boss");
+                recordPassive("Blitz Strike");
                 createParticles(enemy.x, enemy.y, "#ffd93d", 15);
                 p.blitzStrikeCharged = false;
                 p.blitzStrikeMoves = 0;
@@ -3449,6 +3487,7 @@ function attack() {
                 const execBonus = 75; // 75% bonus damage to enemies below 30% HP
                 damage = Math.floor(damage * (1 + execBonus / 100));
                 addLog(`Executioner's Mark! +${execBonus}% damage (enemy below 30% HP)!`, "log-damage");
+                recordPassive("Executioner's Mark");
             }
 
             // --- Crit system with Precision, Deadeye, Shatterpoint + Masteries ---
@@ -3520,9 +3559,11 @@ function attack() {
                 if (roll < 0.05) {
                     damage = 0;
                     addLog("Gambler's Ruin — whiffed! 0 damage!", "log-damage");
+                    recordPassive("Gambler's Ruin");
                 } else if (roll < 0.15) {
                     damage = Math.floor(damage * 3);
                     addLog("Gambler's Ruin — JACKPOT! 3x damage!", "log-boss");
+                    recordPassive("Gambler's Ruin");
                 }
             }
 
@@ -3540,6 +3581,7 @@ function attack() {
                 enemy.shatterpointDuration = 2;
                 enemy.shatterpointReduction = p.passiveEffects.shatterpoint;
                 addLog(`Shatterpoint! Enemy DEF reduced by ${p.passiveEffects.shatterpoint}%!`, "log-damage");
+                recordPassive("Shatterpoint");
             }
 
             // Lethal Focus — track consecutive crits
@@ -3549,6 +3591,7 @@ function attack() {
                     if (p.lethalFocusStacks >= 3 && !p.lethalFocusCharged) {
                         p.lethalFocusCharged = true;
                         addLog("Lethal Focus CHARGED! Next kill guarantees Legendary+ drop!", "log-boss");
+                        recordPassive("Lethal Focus");
                         createParticles(p.x, p.y, "#ff8000", 15);
                     }
                 } else {
@@ -3562,6 +3605,7 @@ function attack() {
                 if (didCrit) {
                     p.adrenalineSurgeMoves = (p.adrenalineSurgeMoves || 0) + 1;
                     addLog("Phantom Assault! Crit grants +1 free move!", "log-level");
+                    recordPassive("Phantom Assault");
                 }
                 p.phantomAssaultCharged = false;
                 p.phantomAssaultMoves = 0;
@@ -3597,6 +3641,7 @@ function attack() {
                     const chronoDmg = Math.max(1, Math.floor(damage * 0.5));
                     enemy.hp -= chronoDmg;
                     addLog(`Chrono Strike! Bonus hit for ${chronoDmg} damage!`, "log-damage");
+                    recordPassive("Chrono Strike");
                     createParticles(enemy.x, enemy.y, "#00ccff");
                     if (p.passiveEffects.lifesteal) {
                         let chronoHeal = Math.floor(chronoDmg * p.passiveEffects.lifesteal / 100);
@@ -3618,6 +3663,7 @@ function attack() {
                 if (p.passiveEffects.adrenaline) {
                     p.adrenalineTurns = 3;
                     addLog(`Adrenaline! +${p.passiveEffects.adrenaline}% SPD for 3 turns!`, "log-level");
+                    recordPassive("Adrenaline");
                 }
 
                 // Adrenaline Surge — grant bonus free moves on kill
@@ -3626,6 +3672,7 @@ function attack() {
                     if ((p.adrenalineSurgeMoves || 0) < maxSurgeMoves) {
                         p.adrenalineSurgeMoves = (p.adrenalineSurgeMoves || 0) + 1;
                         addLog(`Adrenaline Surge! +1 free move (${p.adrenalineSurgeMoves}/${maxSurgeMoves})!`, "log-level");
+                        recordPassive("Adrenaline Surge");
                     }
                 }
 
@@ -3647,6 +3694,7 @@ function attack() {
                     p.lethalFocusCharged = false;
                     p.lethalFocusStacks = 0;
                     addLog("Lethal Focus! Guaranteed Legendary+ drop!", "log-boss");
+                    recordPassive("Lethal Focus");
                     createParticles(enemy.x, enemy.y, "#ff8000", 20);
                 }
 
@@ -3663,6 +3711,7 @@ function attack() {
                     if (bonusLuck > 0) {
                         p.plundererBonusLuck = (p.plundererBonusLuck || 0) + bonusLuck;
                         addLog(`Plunderer! Overkill → +${bonusLuck} temp LUCK (total: ${p.plundererBonusLuck})!`, "log-level");
+                        recordPassive("Plunderer");
                     }
                 }
 
@@ -3671,6 +3720,7 @@ function attack() {
                     if (p.berserkersFuryStacks < 10) {
                         p.berserkersFuryStacks++;
                         addLog(`Berserker's Fury! +${p.berserkersFuryStacks * 3}% ATK!`, "log-level");
+                        recordPassive("Berserker's Fury");
                     }
                     p.adrenalineSurgeMoves = (p.adrenalineSurgeMoves || 0) + 1;
                 }
@@ -3703,6 +3753,7 @@ function attack() {
                         if (cbStacks > 0) heal = Math.floor(heal * Math.pow(0.6, cbStacks));
                         p.hp = Math.min(p.maxHp, p.hp + heal);
                         addLog(`Deathbringer! Killed tough enemy, healed ${heal} HP!`, "log-boss");
+                        recordPassive("Deathbringer");
                     }
                 }
 
@@ -3752,6 +3803,7 @@ function attack() {
                                 loot.def = Math.floor((loot.def / oldStatMult) * newRarity.statMult);
                                 loot.rarity = newRarity;
                                 addLog(`Fortune's Edge! Gear upgraded to ${newRarity.name}!`, "log-boss");
+                                recordPassive("Fortune's Edge");
                             }
                         }
                     }
@@ -3827,6 +3879,7 @@ function attack() {
             p.stormDancerCooldown = 5;
             p.stormDancerMoves = 0;
             addLog("Storm Dancer! AOE crit blast!", "log-boss");
+            recordPassive("Storm Dancer");
         }
 
         // Gambler's Ruin mastery (ATK+SPD+LUCK) — free moves spawn gold tiles
@@ -4506,6 +4559,7 @@ function enemyTurn() {
         if (hasMastery("mirage")) {
             if (Math.random() < 0.15) {
                 addLog("Mirage! Attack phased through you!", "log-level");
+                recordPassive("Mirage");
                 p.mirageCharged = true;
                 return 0;
             }
@@ -4523,12 +4577,14 @@ function enemyTurn() {
                     p.evasiveBulwarkShield = (p.evasiveBulwarkShield || 0) + shieldAmount;
                     p.evasiveBulwarkTurns = 3;
                     addLog(`Evasive Bulwark! +${shieldAmount} shield from dodge!`, "log-level");
+                    recordPassive("Evasive Bulwark");
                     updateBuffsPanel();
                 }
                 // Lucky Star mastery (DEF+SPD+LUCK) — 30% chance to spawn potion on dodge
                 if (hasMastery("luckyStar") && Math.random() < 0.30) {
                     addPotions(1);
                     addLog("Lucky Star! Dodge spawns a potion!", "log-loot");
+                    recordPassive("Lucky Star");
                 }
                 return 0;
             }
@@ -4547,6 +4603,7 @@ function enemyTurn() {
             if (Math.random() < 0.20) {
                 incoming = Math.floor(incoming / 2);
                 addLog("Providence! Damage halved!", "log-level");
+                recordPassive("Providence");
             }
         }
 
@@ -4555,6 +4612,7 @@ function enemyTurn() {
             incoming = 0;
             p.livingFortressSpdTurns = 2;
             addLog("Living Fortress! Trivial damage negated! +2 SPD!", "log-level");
+            recordPassive("Living Fortress");
         }
 
         // Guardian Shell — stacking damage reduction
@@ -4624,6 +4682,7 @@ function enemyTurn() {
             enemy.hp -= counterDmg;
             enemy.bastionStunned = 1;
             addLog(`Chaos Engine block! Counter ${counterDmg} + stun!`, "log-boss");
+            recordPassive("Chaos Engine");
         }
 
         if (incoming > 0) {
@@ -4681,6 +4740,7 @@ function enemyTurn() {
                 p.x = sx;
                 p.y = sy;
                 addLog("Lucky Star! Teleported to safety at 1 HP!", "log-boss");
+                recordPassive("Lucky Star");
             } else if (p.hp <= 0) {
                 p.hp = 0;
             }
@@ -4781,6 +4841,7 @@ function enemyTurn() {
                 gameState.stats.kills++;
                 createParticles(e.x, e.y, "#8800aa", 10);
                 addLog("Doom Aura destroyed an enemy!", "log-boss");
+                recordPassive("Doom Aura");
                 return false;
             }
             return true;
@@ -5388,9 +5449,37 @@ function renderBestRun() {
                     </div>
                 </div>`;
         });
+        // PASSIVE USAGE — top 8 most-fired + counts of total tracked.
+        // Sort descending so the most-relied-on passives surface first.
+        const counts = ls.passiveTriggerCounts || {};
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        let passiveRows = '';
+        if (entries.length === 0) {
+            passiveRows = '<div style="font-size: 0.4em; color: #555;">No passive procs yet — play a run with Rare+ gear equipped.</div>';
+        } else {
+            const top = entries.slice(0, 10);
+            const max = top[0][1];
+            top.forEach(([name, count]) => {
+                const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+                passiveRows += `
+                    <div style="display: flex; align-items: center; padding: 3px 6px; font-size: 0.4em; gap: 8px;">
+                        <div style="flex: 0 0 110px; color: var(--accent-secondary);">${name}</div>
+                        <div style="flex: 1; height: 8px; background: rgba(0,0,0,0.4);">
+                            <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #4ecdc4, #ff9eb5);"></div>
+                        </div>
+                        <div style="flex: 0 0 50px; text-align: right; color: #f0f4f8;">${count}</div>
+                    </div>`;
+            });
+            if (entries.length > 10) {
+                passiveRows += `<div style="font-size: 0.4em; color: #555; padding: 6px 0 0 6px;">…and ${entries.length - 10} more</div>`;
+            }
+        }
+
         classStatsEl.innerHTML = `
             <div style="font-size: 0.6em; color: #ff9eb5; margin-bottom: 10px; border-bottom: 1px solid #ff9eb5; padding-bottom: 5px;">CLASS STATS</div>
             ${rows || '<div style="font-size: 0.4em; color: #555;">Play a run to populate.</div>'}
+            <div style="font-size: 0.6em; color: #4ecdc4; margin: 18px 0 10px 0; border-bottom: 1px solid #4ecdc4; padding-bottom: 5px;">PASSIVE USAGE</div>
+            ${passiveRows}
         `;
     }
 }
@@ -5495,6 +5584,7 @@ document.addEventListener('keydown', (e) => {
         if (p.adrenalineSurgeMoves > 0) {
             p.adrenalineSurgeMoves--;
             addLog(`Adrenaline Surge! Free move! (${p.adrenalineSurgeMoves} remaining)`, "log-level");
+            recordPassive("Adrenaline Surge");
             // Windfall (SPD+LUCK dual) — free moves can spawn loot
             if (hasDualPassive("windfall")) {
                 const windfallChance = 20; // 20% chance
@@ -5502,16 +5592,19 @@ document.addEventListener('keydown', (e) => {
                     if (Math.random() < 0.5) {
                         addPotions(1);
                         addLog("Windfall! A potion appeared!", "log-loot");
+                        recordPassive("Windfall");
                         createParticles(p.x, p.y, "#2ecc71", 10);
                     } else {
                         const windfallLoot = generateLoot(false, true, null);
                         if (windfallLoot.type === "potion") {
                             addPotions(1);
                             addLog("Windfall! Found a potion!", "log-loot");
+                            recordPassive("Windfall");
                         } else {
                             p.inventory.push(windfallLoot);
                             gameState.stats.itemsCollected++;
                             addLog(`Windfall! Found ${windfallLoot.rarity.name.toUpperCase()} ${windfallLoot.name}!`, "log-loot");
+                            recordPassive("Windfall");
                         }
                         createParticles(p.x, p.y, "#2ecc71", 10);
                     }

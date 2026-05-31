@@ -99,6 +99,9 @@ starting Affinity and a unique starter item with a baked-in passive.
 - [x] **Build variety pass 1** — Kinetic Reserve nerfed (exponential → linear), Bulwark grants DEF as well as damage, Charger weight raised for more anti-kite pressure.
 - [x] **Build variety pass 2** — Iron Roots stationary counter-passive (DEF affinity), Mage class for AOE-spam identity, per-class telemetry surfaced in Prestige Shop.
 - [x] **Mobile support** — touch overlay (D-pad + actions + drawer), responsive layout, slim stat strip. Works on phone browsers.
+- [x] **Walls** — random impassable tiles per floor (F3+). Block player + enemy movement, halt Charger dashes, block Ranger line-of-sight. Real cover, real positioning.
+- [x] **Wait/Defend action** (F key, DEF button on mobile) — +50% DEF for the incoming enemy turn, stacks Bulwark/Iron Roots. Sentinel + Charger telegraphs play correctly now.
+- [x] **Passive usage telemetry** — every passive proc records a count; Prestige Shop surfaces top 10. Future balance passes can see which passives never fire.
 - [ ] Iterate: playtest, audit dual/tri mastery balance using the new telemetry.
 
 ## Tech notes
