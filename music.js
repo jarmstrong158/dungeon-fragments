@@ -479,6 +479,7 @@ const MusicEngine = {
         click.start(time);
         click.stop(time + 0.02);
         click.onended = () => { click.disconnect(); clickGain.disconnect(); };
+        this._track(click, clickGain);
     },
 
     _scheduleSnare(time, velMult) {
@@ -500,6 +501,7 @@ const MusicEngine = {
         noise.start(time);
         noise.stop(time + 0.13);
         noise.onended = () => { noise.disconnect(); noiseFilter.disconnect(); noiseGain.disconnect(); };
+        this._track(noise, noiseGain);
 
         // Square wave body — pitched snap like SNES percussion
         const osc = this.audioCtx.createOscillator();
@@ -535,6 +537,7 @@ const MusicEngine = {
         noise.start(time);
         noise.stop(time + 0.05);
         noise.onended = () => { noise.disconnect(); filter.disconnect(); gain.disconnect(); };
+        this._track(noise, gain);
     },
 
     _scheduleHiHatOpen(time) {
@@ -556,6 +559,7 @@ const MusicEngine = {
         noise.start(time);
         noise.stop(time + 0.15);
         noise.onended = () => { noise.disconnect(); filter.disconnect(); gain.disconnect(); };
+        this._track(noise, gain);
     },
 
     _scheduleTripletFill(time, eighthDuration) {

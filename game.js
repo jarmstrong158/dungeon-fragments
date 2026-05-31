@@ -159,6 +159,7 @@ let gameState = {
     deathsCountdownTurns: 0,
     treasureTiles: [],
     floor: 1,
+    floorsCleared: 0, // counts stairs + warps as 1 each (telemetry; warps shouldn't inflate +10/+30)
     gameRunning: false,
     overlayOpen: false,
     lastMoveTime: 0,
@@ -190,8 +191,8 @@ let gameState = {
         atk: 0,
         def: 0,
         spd: 0,
-        luck: 0,
         crit: 0
+        // luck removed — never offered as a level-up stat row
     }
 };
 
@@ -3097,6 +3098,7 @@ function movePlayer(dx, dy) {
 
     if (gameState.stairs && newX === gameState.stairs.x && newY === gameState.stairs.y) {
         gameState.floor++;
+        gameState.floorsCleared = (gameState.floorsCleared || 0) + 1;
         gameState.player.x = 10;
         gameState.player.y = 10;
         generateFloor();
@@ -3106,6 +3108,8 @@ function movePlayer(dx, dy) {
     // Red warp exit — skip 10 floors, flat stat boost
     if (gameState.warpExit && newX === gameState.warpExit.x && newY === gameState.warpExit.y) {
         gameState.floor += 10;
+        // Warp = the reward, not 10 floors of play. Count as +1 for telemetry.
+        gameState.floorsCleared = (gameState.floorsCleared || 0) + 1;
         gameState.player.atk += 2;
         gameState.player.def += 2;
         gameState.player.spd += 2;
@@ -3128,6 +3132,7 @@ function movePlayer(dx, dy) {
     // Blue warp exit — skip 30 floors, bigger stat boost + 2 affinities
     if (gameState.blueWarpExit && newX === gameState.blueWarpExit.x && newY === gameState.blueWarpExit.y) {
         gameState.floor += 30;
+        gameState.floorsCleared = (gameState.floorsCleared || 0) + 1;
         gameState.player.atk += 3;
         gameState.player.def += 3;
         gameState.player.spd += 3;
@@ -3936,8 +3941,8 @@ function levelUp() {
         atk: 0,
         def: 0,
         spd: 0,
-        luck: 0,
         crit: 0
+        // luck removed — never offered as a level-up stat row
     };
 
     addLog("LEVEL UP! Choose your stats!", "log-level");
@@ -4025,17 +4030,25 @@ function repeatLastAllocation() {
     const last = gameState.lastLevelUpAlloc;
     if (!last) return;
     const t = gameState.tempAllocations;
+    const alreadyAllocated = t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.crit;
     // Total points available = currently-pending + already-allocated this session.
-    const total = gameState.pendingStatPoints + (t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.luck + t.crit);
+    const total = gameState.pendingStatPoints + alreadyAllocated;
     let remaining = total;
-    const order = ['maxHp', 'maxMp', 'atk', 'def', 'spd', 'luck', 'crit'];
-    const newAlloc = { maxHp: 0, maxMp: 0, atk: 0, def: 0, spd: 0, luck: 0, crit: 0 };
+    // Luck isn't an allocatable stat in level-up (removed from the row list);
+    // skipped here even though older snapshots may carry a `luck` key.
+    const order = ['maxHp', 'maxMp', 'atk', 'def', 'spd', 'crit'];
+    const newAlloc = { maxHp: 0, maxMp: 0, atk: 0, def: 0, spd: 0, crit: 0 };
     order.forEach(k => {
         const want = last[k] || 0;
         const give = Math.min(want, remaining);
         newAlloc[k] = give;
         remaining -= give;
     });
+    // If the user had manually allocated something, log the overwrite so it
+    // doesn't feel like their click vanished into the void.
+    if (alreadyAllocated > 0) {
+        addLog("REPEAT LAST replaced your manual allocation.", "log-level");
+    }
     gameState.tempAllocations = newAlloc;
     gameState.pendingStatPoints = remaining;
     // Rebuild the rows so the visible values reflect the new allocation.
@@ -4054,7 +4067,6 @@ function confirmLevelUp() {
     p.atk += Math.floor(t.atk * 2 * atkMult);
     p.def += Math.floor(t.def * 2 * defMult);
     p.spd += t.spd;
-    p.luck += t.luck;
     p.crit += t.crit * 2;
 
     p.hp = p.maxHp;
@@ -4062,7 +4074,7 @@ function confirmLevelUp() {
 
     // Snapshot for REPEAT LAST button. Skip an all-zeros allocation (which would
     // happen if the player got forced through with no points — defensive).
-    const allocTotal = t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.luck + t.crit;
+    const allocTotal = t.maxHp + t.maxMp + t.atk + t.def + t.spd + t.crit;
     if (allocTotal > 0) {
         gameState.lastLevelUpAlloc = { ...t };
     }
@@ -4074,8 +4086,8 @@ function confirmLevelUp() {
         atk: 0,
         def: 0,
         spd: 0,
-        luck: 0,
         crit: 0
+        // luck removed — never offered as a level-up stat row
     };
 
     document.getElementById('levelup-overlay').classList.remove('active');
@@ -4873,10 +4885,12 @@ function gameOver() {
     if (gameState.player.level > ls.highestLevel) ls.highestLevel = gameState.player.level;
     if (earnedFragments > ls.bestRunFragments) ls.bestRunFragments = earnedFragments;
 
-    // Per-class telemetry — runsByClass counted on startGame; record floor reached on death.
+    // Per-class telemetry — runsByClass counted on startGame; record floors
+    // CLEARED on death (using floorsCleared, not gameState.floor, so warp portals
+    // don't inflate Trickster/LUCK classes by 10/30 per warp).
     const cls = gameState.selectedClass;
     if (cls && ls.floorsByClass && cls in ls.floorsByClass) {
-        ls.floorsByClass[cls] += gameState.floor;
+        ls.floorsByClass[cls] += (gameState.floorsCleared || 0);
         if (gameState.floor > (ls.highestFloorByClass[cls] || 0)) {
             ls.highestFloorByClass[cls] = gameState.floor;
         }
@@ -5448,9 +5462,31 @@ function setupMobileDrawer() {
         const wrapper = document.createElement('div');
         wrapper.dataset.mobileTab = tab;
         wrapper.style.display = (tab === 'stats') ? 'block' : 'none';
-        el.parentNode.insertBefore(wrapper, el);
+        // Stash original location so resize-to-desktop can restore it.
+        wrapper._originalParent = el.parentNode;
+        wrapper._originalNextSibling = el.nextSibling;
         wrapper.appendChild(el);
         drawerContent.appendChild(wrapper);
+    });
+}
+
+// Reverse setupMobileDrawer — used when user resizes mobile→desktop so the
+// panels aren't stuck inside a closed drawer in the new layout.
+function teardownMobileDrawer() {
+    const drawerContent = document.getElementById('mobile-drawer-content');
+    if (!drawerContent || drawerContent.dataset.populated !== '1') return;
+    drawerContent.dataset.populated = '0';
+    drawerContent.querySelectorAll('[data-mobile-tab]').forEach(wrapper => {
+        const el = wrapper.firstChild;
+        if (!el || !wrapper._originalParent) return;
+        // Clear our inline display:none so original CSS takes over.
+        el.style.display = '';
+        if (wrapper._originalNextSibling && wrapper._originalNextSibling.parentNode === wrapper._originalParent) {
+            wrapper._originalParent.insertBefore(el, wrapper._originalNextSibling);
+        } else {
+            wrapper._originalParent.appendChild(el);
+        }
+        wrapper.remove();
     });
 }
 
@@ -5509,6 +5545,7 @@ if (document.readyState === 'loading') {
 } else {
     initMobileUI();
 }
-window.matchMedia(MOBILE_BREAKPOINT_QUERY).addEventListener('change', () => {
-    if (isMobileViewport()) setupMobileDrawer();
+window.matchMedia(MOBILE_BREAKPOINT_QUERY).addEventListener('change', (e) => {
+    if (e.matches) setupMobileDrawer();
+    else teardownMobileDrawer();
 });
