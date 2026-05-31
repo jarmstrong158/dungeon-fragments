@@ -901,6 +901,13 @@
                 border-color: #ff8000;
                 color: #ff8000;
             }
+            .touch-btn.action-defend {
+                width: 56px;
+                height: 56px;
+                font-size: 0.55em;
+                border-color: #4ecdc4;
+                color: #4ecdc4;
+            }
             .touch-btn.action-pot {
                 width: 56px;
                 height: 56px;

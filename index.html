@@ -33,6 +33,7 @@
                         <p><strong style="color: var(--accent-secondary)">WASD / Arrow Keys</strong> - Move your character</p>
                         <p><strong style="color: var(--accent-secondary)">SPACE</strong> - Basic attack (FREE - no MP cost!)</p>
                         <p><strong style="color: var(--accent-secondary)">R</strong> - Special AOE attack (costs 10 MP, hits 3x3 area)</p>
+                        <p><strong style="color: var(--accent-secondary)">F</strong> - Wait/Defend (+50% DEF this turn, advances enemies, stacks Bulwark/Iron Roots)</p>
                         <p><strong style="color: var(--accent-secondary)">E</strong> - Use Health Potion (restores 50 HP & 25 MP)</p>
                         <p><strong style="color: var(--accent-secondary)">Click Items</strong> - Equip/unequip gear from inventory</p>
 
@@ -536,12 +537,13 @@
         <div id="touch-actions">
             <button class="touch-btn action-attack" data-key=" ">ATK</button>
             <button class="touch-btn action-aoe" data-key="r">AOE</button>
+            <button class="touch-btn action-defend" data-key="f">DEF</button>
             <button class="touch-btn action-pot" data-key="e">POT</button>
         </div>
     </div>
 
     <!-- Bump ?v=N when changing JS to bust browser cache. -->
-    <script src="music.js?v=5"></script>
-    <script src="game.js?v=5"></script>
+    <script src="music.js?v=6"></script>
+    <script src="game.js?v=6"></script>
 </body>
 </html>

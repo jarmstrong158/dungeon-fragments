@@ -63,6 +63,7 @@ const CONFIG = {
         executionerLowHpThreshold: 0.4,
         lastStandThreshold: 0.25,
         siphonMaxPerKill: 15,         // hard cap on MP restore per kill
+        defendDefMult: 1.5,           // Wait/Defend action: +50% effective DEF this turn
     },
     enemyKinds: {
         // Spawn weights — relative odds vs Grunt(100)
@@ -156,6 +157,7 @@ let gameState = {
         affinities: { ATK: 0, DEF: 0, SPD: 0, CRIT: 0, LUCK: 0 },
         bulwarkStacks: 0,
         ironRootsStacks: 0,
+        defendingTurns: 0, // set to 1 by defend(), read by getEffectivePlayerDef during enemy turn, cleared after
         guardianShellStacks: 0,
         adrenalineTurns: 0,
         precisionStacks: 0,
@@ -3861,6 +3863,30 @@ function attack() {
     updateBars();
 }
 
+// Wait/Defend — costs nothing, advances enemy turn, grants +50% effective DEF
+// for the incoming attack(s). Counts as standing-still for stacking passives
+// (Bulwark, Iron Roots, Convergence-counter). Gives Sentinel a real verb and
+// makes Charger telegraphs play-able instead of just lethal.
+function defend() {
+    const p = gameState.player;
+    p.defendingTurns = 1;
+    // Standing-still passives accumulate just like attacking would.
+    if (p.passiveEffects.bulwark && p.bulwarkStacks < CONFIG.combat.bulwarkStackMax) {
+        p.bulwarkStacks++;
+    }
+    if (p.passiveEffects.ironRoots && p.ironRootsStacks < CONFIG.combat.ironRootsStackMax) {
+        p.ironRootsStacks++;
+    }
+    p.adrenalineSurgeMoves = 0;
+    addLog("You brace. (+50% DEF this turn)", "log-level");
+    enemyTurn();
+    // Defence only applied to the enemy turn that just resolved.
+    p.defendingTurns = 0;
+    updateBuffsPanel();
+    forecastDamage();
+    updateBars();
+}
+
 function specialAttack() {
     const C = CONFIG.combat;
     let mpCost = C.aoeBaseCost;
@@ -4158,6 +4184,7 @@ function repeatLastAllocation() {
     showLevelUpScreen();
 }
 window.repeatLastAllocation = repeatLastAllocation;
+window.defend = defend;
 
 function confirmLevelUp() {
     const p = gameState.player;
@@ -4855,6 +4882,10 @@ function getEffectivePlayerDef() {
     if (p.passiveEffects.ironRoots && p.ironRootsStacks > 0) {
         def = Math.floor(def * (1 + p.ironRootsStacks * CONFIG.combat.ironRootsDefPerStack));
     }
+    // Wait/Defend — active +50% DEF for the upcoming enemy turn only.
+    if (p.defendingTurns > 0) {
+        def = Math.floor(def * CONFIG.combat.defendDefMult);
+    }
     return def;
 }
 
@@ -5455,6 +5486,8 @@ document.addEventListener('keydown', (e) => {
         forecastDamage();
     } else if (key === "e") {
         usePotion();
+    } else if (key === "f") {
+        defend();
     }
 
     if (moved) {
