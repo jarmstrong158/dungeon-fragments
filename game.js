@@ -78,7 +78,44 @@ const CONFIG = {
     items: {
         maxPotions: 50,
     },
+    terrain: {
+        // Walls — random impassable tiles. Blocks player + enemies, blocks ranger LOS,
+        // halts charger dashes. Scales with floor up to a cap. No walls on F1-2 (intro).
+        wallMinFloor: 3,
+        wallBaseCount: 3,
+        wallPerFloor: 0.4,
+        wallMaxCount: 18,
+        wallSafeRadiusFromPlayer: 2, // walls won't spawn within this manhattan dist of the player
+    },
 };
+
+// Grid walkability helpers. Used by player movement, enemy AIs, charger dash, ranger LOS.
+function isInBounds(x, y) {
+    return x >= 0 && x < GRIDSIZE && y >= 0 && y < GRIDSIZE;
+}
+function isWall(x, y) {
+    const walls = gameState.walls;
+    if (!walls) return false;
+    for (let i = 0; i < walls.length; i++) {
+        if (walls[i].x === x && walls[i].y === y) return true;
+    }
+    return false;
+}
+function isWalkable(x, y) {
+    return isInBounds(x, y) && !isWall(x, y);
+}
+// Orthogonal line-of-sight check — true if no walls between (fromX,fromY) and (toX,toY).
+// Only meaningful when one of dx/dy is 0 (caller's responsibility).
+function hasLineOfSight(fromX, fromY, toX, toY) {
+    const dx = Math.sign(toX - fromX);
+    const dy = Math.sign(toY - fromY);
+    let x = fromX + dx, y = fromY + dy;
+    while (x !== toX || y !== toY) {
+        if (isWall(x, y)) return false;
+        x += dx; y += dy;
+    }
+    return true;
+}
 
 // Game state
 let gameState = {
@@ -160,6 +197,7 @@ let gameState = {
     treasureTiles: [],
     floor: 1,
     floorsCleared: 0, // counts stairs + warps as 1 each (telemetry; warps shouldn't inflate +10/+30)
+    walls: [],
     gameRunning: false,
     overlayOpen: false,
     lastMoveTime: 0,
@@ -600,15 +638,20 @@ function clampToGrid(e) {
     e.y = Math.max(0, Math.min(GRIDSIZE - 1, e.y));
 }
 // Pick a single-axis step from `e` toward `target`, biased to the dominant axis.
-// sign = +1 to approach, -1 to retreat.
+// sign = +1 to approach, -1 to retreat. Wall-aware: if the preferred axis is
+// blocked, fall back to the other axis. If both blocked, don't move.
 function stepAlongDominantAxis(e, target, sign) {
     const dx = target.x - e.x, dy = target.y - e.y;
     if (dx === 0 && dy === 0) return;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-        e.x += sign * (dx > 0 ? 1 : -1);
-    } else {
-        e.y += sign * (dy > 0 ? 1 : -1);
-    }
+    const sx = sign * (dx > 0 ? 1 : dx < 0 ? -1 : 0);
+    const sy = sign * (dy > 0 ? 1 : dy < 0 ? -1 : 0);
+    // Prefer dominant axis; fall back to perpendicular if blocked.
+    const preferX = Math.abs(dx) >= Math.abs(dy);
+    if (preferX && sx !== 0 && isWalkable(e.x + sx, e.y)) { e.x += sx; return; }
+    if (!preferX && sy !== 0 && isWalkable(e.x, e.y + sy)) { e.y += sy; return; }
+    // Preferred axis blocked — try the other.
+    if (sy !== 0 && isWalkable(e.x, e.y + sy)) { e.y += sy; return; }
+    if (sx !== 0 && isWalkable(e.x + sx, e.y)) { e.x += sx; return; }
 }
 
 // Enemy kinds — each defines stat overrides + AI behaviour.
@@ -625,10 +668,14 @@ const ENEMY_KINDS = {
             const dist = manhattan(enemy.x, enemy.y, p.x, p.y);
             if (dist <= 1) {
                 h.attack(enemy);
-            } else {
-                if (enemy.x < p.x) enemy.x++; else if (enemy.x > p.x) enemy.x--;
-                if (enemy.y < p.y) enemy.y++; else if (enemy.y > p.y) enemy.y--;
+                return;
             }
+            // Step diagonally toward player, but respect walls — try x first, then y,
+            // dropping a step if both are blocked.
+            const sx = enemy.x < p.x ? 1 : enemy.x > p.x ? -1 : 0;
+            const sy = enemy.y < p.y ? 1 : enemy.y > p.y ? -1 : 0;
+            if (sx !== 0 && isWalkable(enemy.x + sx, enemy.y)) enemy.x += sx;
+            if (sy !== 0 && isWalkable(enemy.x, enemy.y + sy)) enemy.y += sy;
         }
     },
     charger: {
@@ -661,7 +708,9 @@ const ENEMY_KINDS = {
                 let steps = 0;
                 for (let i = 0; i < CONFIG.enemyKinds.chargerDashDist; i++) {
                     const nx = enemy.x + dx, ny = enemy.y + dy;
-                    if (nx < 0 || nx >= GRIDSIZE || ny < 0 || ny >= GRIDSIZE) break;
+                    if (!isInBounds(nx, ny)) break;
+                    // Player can be in path; that's the attack target. Walls aren't.
+                    if (isWall(nx, ny)) break;
                     enemy.x = nx; enemy.y = ny;
                     steps++;
                     if (enemy.x === p.x && enemy.y === p.y) {
@@ -691,8 +740,9 @@ const ENEMY_KINDS = {
             const dx = p.x - enemy.x, dy = p.y - enemy.y;
             const dist = Math.abs(dx) + Math.abs(dy);
             const aligned = (dx === 0 || dy === 0);
-            // Fire if orthogonal-aligned within range.
-            if (aligned && dist > 0 && dist <= CONFIG.enemyKinds.rangerFireRange) {
+            // Fire if orthogonal-aligned, in range, AND no walls blocking the line.
+            if (aligned && dist > 0 && dist <= CONFIG.enemyKinds.rangerFireRange
+                && hasLineOfSight(enemy.x, enemy.y, p.x, p.y)) {
                 enemy.arrowFlash = 2;
                 enemy.arrowDx = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
                 enemy.arrowDy = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
@@ -2307,14 +2357,18 @@ function createEnemy(isBoss = false, isRareBoss = false, kindId = null) {
     const bossDefMax = isRareBoss ? 4 : isBoss ? 2.5 : 1;
     const defMult = (bossDefBase + (bossDefMax - bossDefBase) * floorDefScale) * kind.defMult;
 
-    // Ensure enemies don't spawn adjacent to player (safe radius of 3 tiles)
+    // Ensure enemies don't spawn adjacent to player or inside walls.
     const px = gameState.player.x;
     const py = gameState.player.y;
-    let ex, ey;
+    let ex, ey, tries = 0;
     do {
         ex = Math.floor(Math.random() * GRIDSIZE);
         ey = Math.floor(Math.random() * GRIDSIZE);
-    } while (Math.abs(ex - px) + Math.abs(ey - py) <= CONFIG.difficulty.enemySafeRadius);
+        tries++;
+    } while (tries < 200 && (
+        Math.abs(ex - px) + Math.abs(ey - py) <= CONFIG.difficulty.enemySafeRadius
+        || isWall(ex, ey)
+    ));
 
     return {
         x: ex,
@@ -2334,9 +2388,29 @@ function createEnemy(isBoss = false, isRareBoss = false, kindId = null) {
 
 function generateFloor() {
     gameState.enemies = [];
+    gameState.walls = [];
+
+    const p = gameState.player;
+
+    // Walls — scaled per floor, never adjacent to player spawn.
+    if (gameState.floor >= CONFIG.terrain.wallMinFloor) {
+        const T = CONFIG.terrain;
+        const count = Math.min(T.wallMaxCount, Math.floor(T.wallBaseCount + T.wallPerFloor * gameState.floor));
+        const placed = new Set();
+        let tries = 0;
+        while (gameState.walls.length < count && tries < count * 20) {
+            tries++;
+            const wx = Math.floor(Math.random() * GRIDSIZE);
+            const wy = Math.floor(Math.random() * GRIDSIZE);
+            const key = wx + ',' + wy;
+            if (placed.has(key)) continue;
+            if (Math.abs(wx - p.x) + Math.abs(wy - p.y) <= T.wallSafeRadiusFromPlayer) continue;
+            placed.add(key);
+            gameState.walls.push({ x: wx, y: wy });
+        }
+    }
 
     // Floor resets for passives
-    const p = gameState.player;
 
     // Tenacity — convert leftover shield to bonus XP before resetting
     if (p.passiveEffects.tenacity && p.tenacityShield > 0) {
@@ -2536,27 +2610,35 @@ function generateFloor() {
         addLog("A SACRIFICE ALTAR glows ominously...", "log-boss");
     }
 
-    // Normal stairs
-    gameState.stairs = {
-        x: Math.floor(Math.random() * (GRIDSIZE - 4)) + 2,
-        y: Math.floor(Math.random() * (GRIDSIZE - 4)) + 2
-    };
+    // Normal stairs — must not overlap a wall.
+    let sx, sy, sTries = 0;
+    do {
+        sx = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
+        sy = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
+        sTries++;
+    } while (sTries < 100 && isWall(sx, sy));
+    gameState.stairs = { x: sx, y: sy };
 
-    // Red warp exit — always spawns, different position from stairs
-    let wx, wy;
+    // Red warp exit — always spawns, different position from stairs, not on a wall.
+    let wx, wy, wTries = 0;
     do {
         wx = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
         wy = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
-    } while (wx === gameState.stairs.x && wy === gameState.stairs.y);
+        wTries++;
+    } while (wTries < 100 && ((wx === gameState.stairs.x && wy === gameState.stairs.y) || isWall(wx, wy)));
     gameState.warpExit = { x: wx, y: wy };
 
-    // Blue warp exit — always spawns, different position from stairs and red portal
-    let bx, by;
+    // Blue warp exit — always spawns, different position from stairs and red portal, not on a wall.
+    let bx, by, bTries = 0;
     do {
         bx = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
         by = Math.floor(Math.random() * (GRIDSIZE - 4)) + 2;
-    } while ((bx === gameState.stairs.x && by === gameState.stairs.y) ||
-             (bx === gameState.warpExit.x && by === gameState.warpExit.y));
+        bTries++;
+    } while (bTries < 100 && (
+        (bx === gameState.stairs.x && by === gameState.stairs.y) ||
+        (bx === gameState.warpExit.x && by === gameState.warpExit.y) ||
+        isWall(bx, by)
+    ));
     gameState.blueWarpExit = { x: bx, y: by };
 
     // Reset undying on new floor
@@ -2723,6 +2805,27 @@ function drawGame() {
         ctx.fillRect(bx + 8, by + 8, 16, 16);
         ctx.fillStyle = "#66aaff";
         ctx.fillRect(bx + 12, by + 12, 8, 8);
+    }
+
+    // Walls — drawn under enemies so dead enemies still appear on top during fades.
+    if (gameState.walls && gameState.walls.length) {
+        gameState.walls.forEach(w => {
+            const wx = w.x * TILESIZE, wy = w.y * TILESIZE;
+            // Base block — dark stone
+            ctx.fillStyle = "#3a3548";
+            ctx.fillRect(wx + 1, wy + 1, TILESIZE - 2, TILESIZE - 2);
+            // Top-light bevel
+            ctx.fillStyle = "#5a5470";
+            ctx.fillRect(wx + 1, wy + 1, TILESIZE - 2, 3);
+            ctx.fillRect(wx + 1, wy + 1, 3, TILESIZE - 2);
+            // Bottom shadow
+            ctx.fillStyle = "#1f1c2c";
+            ctx.fillRect(wx + 1, wy + TILESIZE - 4, TILESIZE - 2, 3);
+            ctx.fillRect(wx + TILESIZE - 4, wy + 1, 3, TILESIZE - 2);
+            // Brick-line accent
+            ctx.fillStyle = "#28253a";
+            ctx.fillRect(wx + 5, wy + (TILESIZE / 2) - 1, TILESIZE - 10, 2);
+        });
     }
 
     // Enemies
@@ -2921,7 +3024,7 @@ function movePlayer(dx, dy) {
     const newX = gameState.player.x + dx;
     const newY = gameState.player.y + dy;
 
-    if (newX < 0 || newX >= GRIDSIZE || newY < 0 || newY >= GRIDSIZE) return;
+    if (!isWalkable(newX, newY)) return;
 
     gameState.player.x = newX;
     gameState.player.y = newY;
