@@ -539,6 +539,14 @@
             animation: fadeIn 0.4s ease-in;
             max-width: 500px;
             width: 90%;
+            /* Keep the panel within the viewport and let it scroll internally.
+             * The overlays centre the panel with flex (align-items: center), so a
+             * panel taller than the screen would push its top — and the CONFIRM
+             * button below — off the edges with no way to scroll to them. On
+             * mobile this made level-up selection impossible to complete. */
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .levelup-panel h2 {
