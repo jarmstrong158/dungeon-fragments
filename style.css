@@ -552,9 +552,31 @@
             max-width: 500px;
             width: 90%;
             /* margin:auto centres the panel within the scrollable overlay and,
-             * critically, keeps it fully scrollable when it's taller than the
-             * screen (see the overlay rules above). */
+             * keeps it scrollable when taller than the screen (see overlay rules).
+             * The panel is a flex column capped to the viewport height: the header
+             * and CONFIRM button stay fixed, and only the middle options list
+             * scrolls — so CONFIRM is ALWAYS on screen no matter how tall the
+             * content. dvh tracks the visible viewport as the mobile browser bar
+             * shows/hides; vh is the fallback. */
             margin: auto;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            max-height: 90dvh;
+        }
+
+        /* The scrollable options region inside each overlay panel. It takes the
+         * leftover space and scrolls internally; the CONFIRM button below it
+         * never leaves the screen. min-height:0 is required for a flex child to
+         * be allowed to shrink and scroll. */
+        #stat-alloc-options,
+        #affinity-alloc-options,
+        #sacrifice-item-list,
+        #dual-passive-options {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .levelup-panel h2 {
