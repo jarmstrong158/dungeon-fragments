@@ -545,7 +545,8 @@
         .levelup-panel {
             background: var(--bg-mid);
             border: 4px solid var(--accent-gold);
-            padding: 30px 40px;
+            /* Extra bottom padding leaves empty space below the CONFIRM button. */
+            padding: 30px 40px 48px;
             text-align: center;
             box-shadow: 0 0 60px rgba(255, 217, 61, 0.5);
             animation: fadeIn 0.4s ease-in;
@@ -970,6 +971,6 @@
             /* Level-up / affinity / sacrifice overlays: the default 40px side
              * padding wastes width on a phone. Trim it so more content fits. */
             .levelup-panel {
-                padding: 18px 16px;
+                padding: 18px 16px 40px;
             }
         }
