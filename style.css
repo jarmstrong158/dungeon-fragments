@@ -502,6 +502,14 @@
             text-shadow: 0 0 6px #ffd93d;
         }
 
+        /* IMPORTANT: these overlays scroll the OVERLAY itself (overflow-y: auto)
+         * and centre the panel with `margin: auto` on .levelup-panel — NOT with
+         * `align-items: center`. With align-items:center, a panel taller than the
+         * screen overflows above and below the scroll area and its top/bottom
+         * (including the CONFIRM button) become physically unreachable. margin:auto
+         * centres when the panel fits and pins it to the top, fully scrollable,
+         * when it doesn't. This is what lets mobile reach CONFIRM on the tall
+         * affinity screen. */
         #levelup-overlay {
             display: none;
             position: fixed;
@@ -509,7 +517,9 @@
             background: rgba(0,0,0,0.85);
             z-index: 1000;
             justify-content: center;
-            align-items: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 0;
         }
 
         #levelup-overlay.active {
@@ -523,7 +533,9 @@
             background: rgba(0,0,0,0.85);
             z-index: 1001;
             justify-content: center;
-            align-items: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 0;
         }
 
         #affinity-overlay.active {
@@ -539,18 +551,10 @@
             animation: fadeIn 0.4s ease-in;
             max-width: 500px;
             width: 90%;
-            /* Keep the panel within the viewport and let it scroll internally.
-             * The overlays centre the panel with flex (align-items: center), so a
-             * panel taller than the screen would push its top — and the CONFIRM
-             * button below — off the edges with no way to scroll to them. On
-             * mobile this made the level-up / affinity selection impossible to
-             * complete (couldn't scroll to reach CONFIRM). dvh tracks the visible
-             * viewport as the mobile browser toolbar shows/hides; vh is the
-             * fallback for browsers without dvh support. */
-            max-height: 90vh;
-            max-height: 90dvh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            /* margin:auto centres the panel within the scrollable overlay and,
+             * critically, keeps it fully scrollable when it's taller than the
+             * screen (see the overlay rules above). */
+            margin: auto;
         }
 
         .levelup-panel h2 {
@@ -942,12 +946,8 @@
             #music-toggle { padding: 6px 10px; font-size: 0.5em; }
 
             /* Level-up / affinity / sacrifice overlays: the default 40px side
-             * padding wastes width and the tall affinity panel can fill the
-             * screen. Trim padding and give the panel a touch more of the
-             * viewport so it scrolls comfortably to the CONFIRM button. */
+             * padding wastes width on a phone. Trim it so more content fits. */
             .levelup-panel {
                 padding: 18px 16px;
-                max-height: 92vh;
-                max-height: 92dvh;
             }
         }
