@@ -4323,7 +4323,8 @@ function showAffinityScreen() {
 
         const spanLabel = document.createElement('span');
         spanLabel.innerHTML = `<span style="color:${info.color}">${info.label}</span> <span style="color:#888; font-size:0.7em;">(Lv ${gameState.player.affinities[key]})</span>`;
-        spanLabel.style.minWidth = "120px";
+        spanLabel.style.flex = "1 1 auto";
+        spanLabel.style.minWidth = "80px";
 
         const minusBtn = document.createElement('button');
         minusBtn.className = "stat-alloc-btn";
@@ -4352,10 +4353,17 @@ function showAffinityScreen() {
             updateBtnStates();
         };
 
+        // Keep −/value/+ together as one non-wrapping cluster so the + button
+        // can't wrap onto its own line on narrow phones (the label flexes to
+        // fill the rest of the top row; the description wraps full-width below).
+        const controls = document.createElement('div');
+        controls.style.cssText = "display:flex; align-items:center; gap:8px; flex-shrink:0;";
+        controls.appendChild(minusBtn);
+        controls.appendChild(spanValue);
+        controls.appendChild(plusBtn);
+
         row.appendChild(spanLabel);
-        row.appendChild(minusBtn);
-        row.appendChild(spanValue);
-        row.appendChild(plusBtn);
+        row.appendChild(controls);
 
         // Description below
         const descRow = document.createElement('div');
