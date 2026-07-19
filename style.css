@@ -73,6 +73,11 @@
             --xp-color: #2ecc71;
         }
         
+        html, body {
+            /* Block pull-to-refresh and scroll-chaining so a stray swipe during
+             * a run can't reload the page or bounce the whole document. */
+            overscroll-behavior: none;
+        }
         body {
             font-family: 'Press Start 2P', cursive;
             background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1042 100%);
@@ -746,10 +751,17 @@
                 display: none;
             }
 
-            /* Game area becomes a single column with the canvas centred. */
+            /* Game area becomes a single column with the canvas centred.
+             * Reserve space at the bottom equal to the touch-control cluster
+             * (plus the home-indicator safe area) so the D-pad/action buttons
+             * never sit on top of the play area. */
             #game-area {
                 display: block !important;
                 margin-bottom: 0 !important;
+            }
+            body.in-game #game-container {
+                justify-content: flex-start;
+                padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
             }
 
             /* Canvas scales to viewport width while preserving its square aspect. */
@@ -771,7 +783,9 @@
             #mobile-stat-strip {
                 display: flex;
                 gap: 6px;
-                padding: 4px 8px;
+                /* extra right padding so the fixed ≡ drawer toggle doesn't cover
+                 * the potion counter at the end of the strip. */
+                padding: 4px 62px 4px 8px;
                 font-family: 'VT323', monospace;
                 font-size: 1em;
                 color: var(--text-light);
@@ -785,8 +799,8 @@
             #mobile-drawer-toggle {
                 display: block;
                 position: fixed;
-                top: 8px;
-                right: 8px;
+                top: calc(8px + env(safe-area-inset-top, 0px));
+                right: calc(8px + env(safe-area-inset-right, 0px));
                 z-index: 600;
                 width: 48px;
                 height: 48px;
@@ -814,7 +828,7 @@
                 transition: height 0.25s ease;
                 box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
             }
-            #mobile-drawer.open { height: 75vh; }
+            #mobile-drawer.open { height: 75vh; height: 75dvh; }
             #mobile-drawer-tabs {
                 display: flex;
                 gap: 4px;
@@ -826,7 +840,7 @@
                 flex: 1;
                 padding: 10px 6px;
                 font-family: 'Press Start 2P', cursive;
-                font-size: 0.55em;
+                font-size: 0.7em;
                 background: transparent;
                 color: var(--text-light);
                 border: 2px solid #444;
@@ -842,7 +856,17 @@
             #mobile-drawer-content {
                 padding: 12px;
                 height: calc(75vh - 60px);
+                height: calc(75dvh - 60px);
                 overflow-y: auto;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            }
+            /* Inventory items are tap-to-equip targets — bump them up from ~7px
+             * (0.5em of a 14px base) so names/stats are legible and tappable. */
+            #mobile-drawer-content .item {
+                font-size: 0.72em !important;
+                padding: 12px;
             }
             #mobile-drawer-content .panel {
                 background: transparent;
@@ -886,21 +910,26 @@
                 pointer-events: auto;
                 position: absolute;
                 left: 16px;
-                bottom: 16px;
+                bottom: calc(16px + env(safe-area-inset-bottom, 0px));
                 display: grid;
                 grid-template-columns: 56px 56px 56px;
                 grid-template-rows: 56px 56px 56px;
-                gap: 4px;
+                gap: 8px;
             }
+            /* 2x2 grid (ATK AOE / DEF POT) keeps the action cluster short enough
+             * to sit below the board instead of a tall column that covered the
+             * bottom-right tiles. */
             #touch-actions {
                 pointer-events: auto;
                 position: absolute;
                 right: 16px;
-                bottom: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-end;
+                bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                display: grid;
+                grid-template-columns: 62px 62px;
+                grid-auto-rows: 62px;
+                gap: 10px;
+                align-items: center;
+                justify-items: center;
             }
             .touch-btn {
                 font-family: 'Press Start 2P', cursive;
@@ -921,35 +950,41 @@
                 transform: translateY(2px);
                 box-shadow: 0 1px 0 rgba(0,0,0,0.5);
             }
+            /* Greyed out when the action can't be performed (no MP / no potions).
+             * Still tappable (harmless no-op) but visibly unavailable. */
+            .touch-btn.disabled {
+                opacity: 0.32;
+                filter: grayscale(0.6);
+            }
             .touch-btn.dir {
                 width: 56px;
                 height: 56px;
                 font-size: 1.1em;
             }
             .touch-btn.action-attack {
-                width: 72px;
-                height: 72px;
-                font-size: 0.7em;
+                width: 62px;
+                height: 62px;
+                font-size: 0.62em;
                 border-color: var(--accent-primary);
                 color: var(--accent-primary);
             }
             .touch-btn.action-aoe {
-                width: 60px;
-                height: 60px;
-                font-size: 0.6em;
+                width: 62px;
+                height: 62px;
+                font-size: 0.58em;
                 border-color: #ff8000;
                 color: #ff8000;
             }
             .touch-btn.action-defend {
-                width: 56px;
-                height: 56px;
+                width: 62px;
+                height: 62px;
                 font-size: 0.55em;
                 border-color: #4ecdc4;
                 color: #4ecdc4;
             }
             .touch-btn.action-pot {
-                width: 56px;
-                height: 56px;
+                width: 62px;
+                height: 62px;
                 font-size: 0.55em;
                 border-color: #2ecc71;
                 color: #2ecc71;

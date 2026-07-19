@@ -899,14 +899,17 @@ const CLASSES = {
 };
 
 // Player debuffs — permanent per floor threshold, stacking
+// Thresholds spread out (was every 5 floors, 35-65) so the mid-game debuff
+// stack is a ramp instead of a cliff. Now spans 35-88. The two harshest
+// (Cursed Blood, Death's Countdown) also softened slightly. Numbers only.
 const PLAYER_DEBUFFS = [
     { floor: 35, name: "Corrosion", desc: "DEF reduced by 15%", stat: "corrosion", color: "#aa8844" },
-    { floor: 40, name: "Fatigue", desc: "Potions heal 25% less", stat: "fatigue", color: "#886644" },
-    { floor: 45, name: "Entropy", desc: "Passive effect values reduced by 10%", stat: "entropy", color: "#664488" },
-    { floor: 50, name: "Cursed Blood", desc: "All healing reduced by 40%", stat: "cursedBlood", color: "#880044" },
-    { floor: 55, name: "Withering", desc: "ATK reduced by 10%", stat: "withering", color: "#cc6622" },
-    { floor: 60, name: "Void Siphon", desc: "Lose 1 MP per tile moved", stat: "voidSiphon", color: "#440088" },
-    { floor: 65, name: "Death's Countdown", desc: "40-turn timer per floor", stat: "deathsCountdown", color: "#ff0000" }
+    { floor: 43, name: "Fatigue", desc: "Potions heal 25% less", stat: "fatigue", color: "#886644" },
+    { floor: 51, name: "Entropy", desc: "Passive effect values reduced by 10%", stat: "entropy", color: "#664488" },
+    { floor: 60, name: "Cursed Blood", desc: "All healing reduced by 30%", stat: "cursedBlood", color: "#880044" },
+    { floor: 68, name: "Withering", desc: "ATK reduced by 10%", stat: "withering", color: "#cc6622" },
+    { floor: 77, name: "Void Siphon", desc: "Lose 1 MP per tile moved", stat: "voidSiphon", color: "#440088" },
+    { floor: 88, name: "Death's Countdown", desc: "50-turn timer per floor", stat: "deathsCountdown", color: "#ff0000" }
 ];
 
 // Affinity milestone bonuses — innate bonuses at level 5 and 10
@@ -2615,7 +2618,7 @@ function generateFloor() {
 
     // Death's Countdown timer reset
     if (hasDebuff("deathsCountdown")) {
-        gameState.deathsCountdownTurns = 40;
+        gameState.deathsCountdownTurns = 50;
     }
 
     // Sacrifice altar — chance to appear beyond floor 60
@@ -3296,7 +3299,7 @@ function movePlayer(dx, dy) {
         let regenAmount = Math.floor(gameState.player.maxHp * gameState.player.passiveEffects.regen / 100);
         regenAmount = Math.max(1, regenAmount);
         const cbRegenStacks = countDebuff("cursedBlood");
-        if (cbRegenStacks > 0) regenAmount = Math.floor(regenAmount * Math.pow(0.6, cbRegenStacks));
+        if (cbRegenStacks > 0) regenAmount = Math.floor(regenAmount * Math.pow(0.7, cbRegenStacks));
         gameState.player.hp = Math.min(
             gameState.player.maxHp,
             gameState.player.hp + Math.max(1, regenAmount)
@@ -3626,7 +3629,7 @@ function attack() {
             if (p.passiveEffects.lifesteal) {
                 let heal = Math.floor(damage * p.passiveEffects.lifesteal / 100);
                 const cbStacks1 = countDebuff("cursedBlood");
-                if (cbStacks1 > 0) heal = Math.floor(heal * Math.pow(0.6, cbStacks1));
+                if (cbStacks1 > 0) heal = Math.floor(heal * Math.pow(0.7, cbStacks1));
                 p.hp = Math.min(p.maxHp, p.hp + heal);
             }
 
@@ -3646,7 +3649,7 @@ function attack() {
                     if (p.passiveEffects.lifesteal) {
                         let chronoHeal = Math.floor(chronoDmg * p.passiveEffects.lifesteal / 100);
                         const cbStacks2 = countDebuff("cursedBlood");
-                        if (cbStacks2 > 0) chronoHeal = Math.floor(chronoHeal * Math.pow(0.6, cbStacks2));
+                        if (cbStacks2 > 0) chronoHeal = Math.floor(chronoHeal * Math.pow(0.7, cbStacks2));
                         p.hp = Math.min(p.maxHp, p.hp + chronoHeal);
                     }
                 }
@@ -3735,7 +3738,7 @@ function attack() {
                         const overkill = Math.abs(enemy.hp);
                         let heal = Math.floor(overkill * 0.10);
                         const cbStacks = countDebuff("cursedBlood");
-                        if (cbStacks > 0) heal = Math.floor(heal * Math.pow(0.6, cbStacks));
+                        if (cbStacks > 0) heal = Math.floor(heal * Math.pow(0.7, cbStacks));
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
                             addLog(`Blood Tithe heals ${heal} HP from overkill!`, "log-level");
@@ -3750,7 +3753,7 @@ function attack() {
                     if (enemy.def > playerTotalDef) {
                         let heal = Math.floor(p.maxHp * 0.25);
                         const cbStacks = countDebuff("cursedBlood");
-                        if (cbStacks > 0) heal = Math.floor(heal * Math.pow(0.6, cbStacks));
+                        if (cbStacks > 0) heal = Math.floor(heal * Math.pow(0.7, cbStacks));
                         p.hp = Math.min(p.maxHp, p.hp + heal);
                         addLog(`Deathbringer! Killed tough enemy, healed ${heal} HP!`, "log-boss");
                         recordPassive("Deathbringer");
@@ -4092,7 +4095,7 @@ function usePotion() {
     // Cursed Blood — all healing reduced by 40% per stack
     const cursedBloodPotionStacks = countDebuff("cursedBlood");
     if (cursedBloodPotionStacks > 0) {
-        const cbMult = Math.pow(0.6, cursedBloodPotionStacks);
+        const cbMult = Math.pow(0.7, cursedBloodPotionStacks);
         hpHeal = Math.floor(hpHeal * cbMult);
         mpHeal = Math.floor(mpHeal * cbMult);
     }
@@ -4108,7 +4111,9 @@ function levelUp() {
     const p = gameState.player;
     p.level++;
     p.xp -= p.xpToNext;
-    p.xpToNext = Math.floor(p.xpToNext * 1.5);
+    // XP curve softened 1.5 -> 1.4 so per-kill XP keeps pace better and
+    // farming a floor stalls leveling less. Gentle tuning, numbers only.
+    p.xpToNext = Math.floor(p.xpToNext * 1.4);
 
     p.maxHp += 10;
     p.maxMp += 5;
@@ -5535,8 +5540,8 @@ document.addEventListener('keydown', (e) => {
     if (hasMastery("livingFortress") && p.livingFortressSpdTurns > 0) {
         spdBonus += 2;
     }
-    const minDelay = 70;
-    const maxDelay = 150;
+    const minDelay = 60;
+    const maxDelay = 130;
     let moveDelay = Math.max(minDelay, maxDelay - spdBonus * 10);
 
     // Time Dilation medallion — speed cannot be lower than 1.5x fastest enemy
@@ -5736,24 +5741,143 @@ if (_origUpdateBars) {
         if (lv) lv.textContent = p.level;
         if (po) po.textContent = p.potions;
         if (fl) fl.textContent = gameState.floor;
+        updateTouchButtonStates();
     };
+}
+
+// Grey out AOE (not enough MP) and POT (no potions) so the mobile action
+// buttons visibly reflect whether they'll do anything. Mirrors the cost
+// formula in specialAttack(); read-only, no gameplay effect.
+function currentAoeCost() {
+    const C = CONFIG.combat;
+    const p = gameState.player;
+    let mpCost = C.aoeBaseCost + Math.floor(gameState.floor / C.aoeFloorCostPer);
+    if (p.passiveEffects.psychicFlare) mpCost += C.psychicFlareExtraCost;
+    mpCost += (p.manaBurnStacks || 0) * C.manaBurnPerStack;
+    const reduction = p.passiveEffects.arcane || 0;
+    return Math.floor(mpCost * (1 - reduction / 100));
+}
+
+function updateTouchButtonStates() {
+    if (!gameState.gameRunning || !gameState.player) return;
+    const p = gameState.player;
+    const aoeBtn = document.querySelector('.touch-btn.action-aoe');
+    const potBtn = document.querySelector('.touch-btn.action-pot');
+    if (aoeBtn) aoeBtn.classList.toggle('disabled', p.mp < currentAoeCost());
+    if (potBtn) potBtn.classList.toggle('disabled', (p.potions || 0) <= 0);
 }
 
 // Wire each .touch-btn to dispatch a synthetic keydown matching data-key.
 // pointerdown fires for touch, mouse, and pen — single handler covers all.
+//
+// Direction buttons (.dir) also auto-repeat while held, so a player can hold a
+// direction to keep walking instead of tapping once per tile. The repeat fires
+// faster than any move cooldown; the keydown handler's own SPD-based throttle
+// (moveDelay) regulates the actual pace, so hold-speed automatically matches the
+// player's SPD. Action buttons never auto-repeat.
+function dispatchKey(key) {
+    if (!key) return;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+
 function setupTouchControls() {
     document.querySelectorAll('.touch-btn').forEach(btn => {
         if (btn.dataset.wired === '1') return;
         btn.dataset.wired = '1';
-        const fire = (e) => {
-            e.preventDefault();
-            const key = btn.dataset.key;
-            if (!key) return;
-            document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+        const key = btn.dataset.key;
+        const isDir = btn.classList.contains('dir');
+        let repeatTimer = null;
+
+        const stop = () => {
+            if (repeatTimer !== null) { clearInterval(repeatTimer); repeatTimer = null; }
         };
-        btn.addEventListener('pointerdown', fire);
+        const start = (e) => {
+            e.preventDefault();
+            dispatchKey(key);
+            if (isDir) {
+                stop();
+                repeatTimer = setInterval(() => dispatchKey(key), 55);
+                // Pointer capture keeps the release event on this button even if
+                // the finger slides off, so we always clear the repeat timer.
+                if (e.pointerId != null && btn.setPointerCapture) {
+                    try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+            }
+        };
+
+        btn.addEventListener('pointerdown', start);
+        btn.addEventListener('pointerup', stop);
+        btn.addEventListener('pointercancel', stop);
+        btn.addEventListener('pointerleave', stop);
         // Suppress the synthetic mousedown that follows touchstart on some browsers.
         btn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    });
+    // Safety net: never leave a repeat running if focus/visibility is lost.
+    if (!window._touchStopWired) {
+        window._touchStopWired = true;
+        const stopAll = () => document.querySelectorAll('.touch-btn').forEach(b => {
+            b.dispatchEvent(new Event('pointercancel'));
+        });
+        window.addEventListener('blur', stopAll);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+    }
+}
+
+// Tap-to-move: tapping the board steps the player one tile toward the tapped
+// tile (choosing a walkable axis), or attacks if the tapped tile holds an
+// adjacent enemy. Dispatches the same synthetic keydowns as the D-pad so all
+// existing turn/cooldown logic runs unchanged. Works with mouse too (desktop
+// click-to-step). Additive — the D-pad and keyboard still work as before.
+function tileFromPointer(canvas, e) {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    const tx = Math.floor((e.clientX - rect.left) / rect.width * GRIDSIZE);
+    const ty = Math.floor((e.clientY - rect.top) / rect.height * GRIDSIZE);
+    if (tx < 0 || ty < 0 || tx >= GRIDSIZE || ty >= GRIDSIZE) return null;
+    return { tx, ty };
+}
+
+function stepKeyToward(px, py, tx, ty) {
+    const dx = tx - px, dy = ty - py;
+    // Try the dominant axis first, then the other; skip blocked steps so we
+    // never waste a turn walking into a wall.
+    const primary = Math.abs(dx) >= Math.abs(dy);
+    const order = primary
+        ? [[Math.sign(dx), 0], [0, Math.sign(dy)]]
+        : [[0, Math.sign(dy)], [Math.sign(dx), 0]];
+    for (const [sx, sy] of order) {
+        if (sx === 0 && sy === 0) continue;
+        if (typeof isWalkable === 'function' && !isWalkable(px + sx, py + sy)) continue;
+        if (sx === 1) return 'd';
+        if (sx === -1) return 'a';
+        if (sy === 1) return 's';
+        if (sy === -1) return 'w';
+    }
+    return null;
+}
+
+function handleTileTap(tx, ty) {
+    if (!gameState.gameRunning || gameState.overlayOpen) return;
+    const p = gameState.player;
+    const dist = Math.abs(tx - p.x) + Math.abs(ty - p.y);
+    if (dist === 0) return; // tapped self — no-op
+    const enemyThere = gameState.enemies &&
+        gameState.enemies.some(en => en.x === tx && en.y === ty);
+    if (dist === 1 && enemyThere) { dispatchKey(' '); return; } // attack adjacent enemy
+    const key = stepKeyToward(p.x, p.y, tx, ty);
+    if (key) dispatchKey(key);
+}
+
+function setupCanvasTap() {
+    const canvas = document.getElementById('game-canvas');
+    if (!canvas || canvas.dataset.tapWired === '1') return;
+    canvas.dataset.tapWired = '1';
+    canvas.addEventListener('pointerdown', (e) => {
+        if (!gameState.gameRunning || gameState.overlayOpen) return;
+        const tile = tileFromPointer(canvas, e);
+        if (!tile) return;
+        e.preventDefault();
+        handleTileTap(tile.tx, tile.ty);
     });
 }
 
@@ -5761,12 +5885,11 @@ function setupTouchControls() {
 function initMobileUI() {
     if (isMobileViewport()) {
         setupMobileDrawer();
-        setupTouchControls();
-    } else {
-        // Wire touch controls even on desktop so DevTools-mobile-simulation works
-        // without a reload.
-        setupTouchControls();
     }
+    // Wire touch controls + canvas tap even on desktop so DevTools mobile
+    // simulation works without a reload, and desktop click-to-step is available.
+    setupTouchControls();
+    setupCanvasTap();
 }
 
 if (document.readyState === 'loading') {
